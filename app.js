@@ -731,4 +731,5 @@ function setLang(l) {
 document.querySelectorAll("#langSwitch button").forEach(b => b.onclick = () => setLang(b.dataset.lang));
 
 /* ---------- init ---------- */
-$("#brandName").textConten
+$("#brandName").textContent = CONFIG.BRAND_NAME;
+setLang(state.lang);
