@@ -33,7 +33,7 @@ button{font-family:var(--arch);cursor:pointer}
 .userbox{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted)}
 .userbox button{background:none;border:0;color:var(--indigo);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
 
-.wrap{max-width:1180px;margin:0 auto;padding:26px clamp(14px,3vw,32px) 120px}
+.wrap{max-width:1560px;margin:0 auto;padding:26px clamp(14px,3vw,40px) 120px}
 .hidden{display:none!important}
 
 /* login */
@@ -85,7 +85,9 @@ button{font-family:var(--arch);cursor:pointer}
 .editor label{display:block;font-family:var(--arch);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:12px 0 5px}
 .editor input,.editor select{width:100%;border:1px solid var(--line);border-radius:2px;padding:9px 11px;font-family:var(--hank);font-size:13.5px;background:#fff}
 .editor input:focus,.editor select:focus{outline:none;border-color:var(--indigo)}
-.opt-row{display:grid;grid-template-columns:90px 1fr 1fr 1fr 120px 30px;gap:8px;align-items:center;margin-bottom:8px}
+.opt-row,.opt-head{display:grid;grid-template-columns:110px 1fr 1fr 1fr 170px 34px;gap:10px;align-items:center;margin-bottom:8px}
+.opt-head{margin:14px 0 4px}
+.opt-head span{font-family:var(--arch);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 @media(max-width:900px){.opt-row{grid-template-columns:1fr 1fr;}}
 .opt-row .del{border:0;background:none;color:var(--bad);font-size:15px}
 .editor .row-actions{display:flex;gap:10px;margin-top:18px;align-items:center}
@@ -117,6 +119,25 @@ td .mini{color:var(--muted);font-size:11.5px}
 .mb-mini .tag{position:absolute;left:0;right:0;bottom:0;font-family:var(--arch);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:linear-gradient(transparent,rgba(22,22,40,.8));padding:10px 6px 4px}
 .mb-mini .chips{display:flex;height:100%}
 .mb-mini .chips i{flex:1}
+
+/* submission detail page */
+tbody tr{cursor:pointer}
+.subd-head{background:#fff;border:1px solid var(--line);border-radius:4px;padding:22px 26px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:20px}
+.subd-head h1{font-family:var(--arch);font-weight:800;text-transform:uppercase;font-size:24px;letter-spacing:-.01em}
+.subd-head .meta{color:var(--ink-soft);font-size:14px;margin-top:4px}
+.subd-cols{column-count:2;column-gap:22px}
+@media(max-width:1100px){.subd-cols{column-count:1}}
+.subd-sec{background:#fff;border:1px solid var(--line);border-radius:4px;padding:18px 22px;margin-bottom:22px;break-inside:avoid}
+.subd-sec h2{font-family:var(--arch);font-size:12.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--indigo-deep);border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:6px}
+.subd-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:8px 0;border-bottom:1px dashed var(--paper-2);font-size:14.5px}
+.subd-row:last-child{border-bottom:0}
+.subd-row .k{color:var(--ink-soft);max-width:52%}
+.subd-row .v{text-align:right;font-weight:600;display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.subd-row .v img{width:44px;height:33px;object-fit:cover;border-radius:3px;border:1px solid var(--line)}
+.subd-row .pal{display:inline-flex;height:18px;width:70px;border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+.subd-row .pal i{flex:1}
+.backlink{display:inline-flex;align-items:center;gap:8px;font-family:var(--arch);font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:16px;cursor:pointer;background:none;border:0}
+.backlink:hover{color:var(--indigo)}
 
 /* savebar */
 .savebar{position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(251,251,254,.94);backdrop-filter:blur(10px);border-top:1px solid var(--line);padding:12px clamp(16px,3vw,32px);display:flex;align-items:center;justify-content:space-between;gap:14px}
@@ -191,6 +212,6 @@ td .mini{font-size:12.5px}
   </div>
 </div>
 <script src="../questionnaire/config.js?v=6"></script>
-<script src="admin.js?v=3"></script>
+<script src="admin.js?v=4"></script>
 </body>
 </html>

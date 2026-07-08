@@ -647,6 +647,22 @@ function moodboardHtml() {
   </div>`;
 }
 
+function answersRows() {
+  const steps = buildSteps(D);
+  const out = [];
+  steps.filter(s => s.qs).forEach(s => {
+    const title = s.titleRaw ? s.titleRaw() : T(s.title);
+    const rows = s.qs.filter(q => !q.show || q.show(D))
+      .map(q => {
+        const v = D[q.id];
+        const has = !(v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length));
+        return has ? { q: T(q.l), a: fmtVal(q, D), id: q.id } : null;
+      }).filter(Boolean);
+    if (rows.length) out.push({ sec: title, rows });
+  });
+  return out;
+}
+
 function answersText() {
   const steps = buildSteps(D);
   let out = [];
@@ -666,7 +682,7 @@ async function submitAnswers() {
     const r = await SB("/rest/v1/submissions", { method:"POST",
       headers:{ Prefer:"return=minimal" },
       body: JSON.stringify({ lang: state.lang, client_name: D.g_name||"", client_email: D.g_email||"",
-        client_phone: D.g_phone||"", data: D }) });
+        client_phone: D.g_phone||"", data: D, summary: answersRows() }) });
     dbOk = r.status === 201;
   } catch(e) {}
   const keyOk = CONFIG.WEB3FORMS_KEY && !/YOUR_WEB3FORMS/.test(CONFIG.WEB3FORMS_KEY);

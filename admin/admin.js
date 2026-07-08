@@ -178,6 +178,7 @@ function editorHtml(sc, q) {
       <button class="del" data-act="delopt" data-oi="${oi}" title="Remove option">✕</button>
     </div>`).join("");
   const choice = ["radio","check","imgradio","imgcheck","swatch"].includes(q.type);
+  const optHead = `<div class="opt-head"><span>value (internal)</span><span>ქართული</span><span>English</span><span>Русский</span><span>image file</span><span></span></div>`;
   const depTargets = qList(sc).filter(x => x.id !== q.id && x.options)
     .map(x => `<option value="${esc(x.id)}" ${q.dep&&(q.dep.q===x.id||q.dep.q===("w_"+x.id)||q.dep.q===("b_"+x.id))?"selected":""}>${esc(tr(x.label,"en"))}</option>`).join("");
   return `<div class="editor" data-edscope="${sc.key}" data-edq="${esc(q.id)}">
@@ -189,7 +190,7 @@ function editorHtml(sc, q) {
       <div><label>Required</label><select data-ed="req"><option value="1" ${q.req!==false?"selected":""}>Yes</option><option value="0" ${q.req===false?"selected":""}>No</option></select></div>
       <div><label>Shown</label><select data-ed="vis"><option value="1" ${q.visible!==false?"selected":""}>Yes</option><option value="0" ${q.visible===false?"selected":""}>Hidden</option></select></div>
     </div>
-    ${choice ? `<label>Options</label>${opts}<button class="btn ghost sm" data-act="addopt">+ Add option</button>` : ""}
+    ${choice ? `<label>Answer options — one row per option, texts in all three languages</label>${optHead}${opts}<button class="btn ghost sm" data-act="addopt">+ Add option</button>` : ""}
     <label>Show this question only if…</label>
     <div class="dep-grid">
       <select data-ed="depq"><option value="">— always shown —</option>${depTargets}</select>
@@ -259,7 +260,7 @@ function renderSubs() {
   const rows = SUBS.map(s => {
     const styles = (s.data?.s_style||[]).map(v=>tr("st_"+v,"en")).join(" + ") || "—";
     const d = new Date(s.created_at);
-    return `<tr>
+    return `<tr data-act="view" data-id="${s.id}">
       <td>${d.toLocaleDateString("en-GB")} <div class="mini">${d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})}</div></td>
       <td><b>${esc(s.client_name||"—")}</b><div class="mini">${esc(s.client_phone||"")}</div></td>
       <td>${esc(s.client_email||"—")}</td>
@@ -277,42 +278,78 @@ function renderSubs() {
   const csvBtn = $("#btnCsv"); if (csvBtn) csvBtn.onclick = exportCsv;
 }
 
-function detailHtml(s) {
-  const d = s.data || {};
-  const styleCells = (d.s_style||[]).slice(0,2).map(v =>
-    `<div class="cell wide"><img src="../questionnaire/assets/styles/${v==="contemporary"?"contemporary_1":v==="midcentury"?"midcentury_1":v+"_1"}.jpg"><div class="tag">${esc(tr("st_"+v,"en"))}</div></div>`).join("");
-  const PAL = { 1:["#FFFFFF","#0d0e10","#fd2e21","#fec81e","#1a79fe"],2:["#f3e6d5","#ac6c3d","#6a714f","#c6873a","#8e4939"],3:["#f6f1e7","#101010","#1b3f35","#b88536","#7c583e"],4:["#eadaca","#ca9e6f","#936443","#b55c3c","#61554a"],5:["#dbcfc1","#b7ab9b","#907b6a","#4e4a45"],6:["#ddccbc","#c3b7a7","#8e725d","#bea06e"],7:["#e8e0d5","#d1cfc2","#b8a78f","#a7ad9f"],8:["#e6c7c4","#d0d6c8","#d8e0e2","#bdb0a0"] };
-  const palCells = (d.s_palette||[]).map(p =>
-    `<div class="cell"><div class="chips">${(PAL[p]||[]).map(c=>`<i style="background:${c}"></i>`).join("")}</div><div class="tag">${esc(tr("pal_"+p,"en"))}</div></div>`).join("");
-  const mat = [];
-  if (d.s_floorcol) mat.push([`floorcol_${d.s_floorcol}`,"Floor"]);
-  if (d.s_wall) mat.push([`wall_${d.s_wall}`,"Walls"]);
-  if (d.s_curtains && d.s_curtains!=="other") mat.push([`curt_${d.s_curtains}`,"Curtains"]);
-  if (d.s_metal) mat.push([[{black:"fin_mblack",gold:"fin_bgold",silver:"fin_nickel",rose:"fin_brose"}[d.s_metal]],"Metal"]);
-  const matCells = mat.map(([f,t])=>`<div class="cell"><img src="${QASSETS}/opts/${f}.jpg"><div class="tag">${t}</div></div>`).join("");
+let CUR_SUB=null;
+const PAL = { 1:["#FFFFFF","#0d0e10","#fd2e21","#fec81e","#1a79fe"],2:["#f3e6d5","#ac6c3d","#6a714f","#c6873a","#8e4939"],3:["#f6f1e7","#101010","#1b3f35","#b88536","#7c583e"],4:["#eadaca","#ca9e6f","#936443","#b55c3c","#61554a"],5:["#dbcfc1","#b7ab9b","#907b6a","#4e4a45"],6:["#ddccbc","#c3b7a7","#8e725d","#bea06e"],7:["#e8e0d5","#d1cfc2","#b8a78f","#a7ad9f"],8:["#e6c7c4","#d0d6c8","#d8e0e2","#bdb0a0"] };
 
-  let answers = "";
+function findDocQ(id) {
+  const m = id.match(/^([bw])(\d+)_(.+)$/);
+  const scKey = m ? (m[1]==="b" ? "bedroom" : "bathroom") : null;
+  const rawId = m ? m[3] : id;
+  for (const sc of scopes()) {
+    if (scKey && sc.key !== scKey) continue;
+    if (!scKey && sc.kind !== "section") continue;
+    const q = qList(sc).find(x => x.id === rawId);
+    if (q) return q;
+  }
+  return null;
+}
+function valueVisuals(qid, data) {
+  const v = data ? data[qid] : undefined;
+  if (v === undefined) return "";
+  const q = findDocQ(qid);
+  const vals = Array.isArray(v) ? v : [v];
+  if (qid === "s_palette") return vals.map(p => `<span class="pal">${(PAL[p]||[]).map(c=>`<i style="background:${c}"></i>`).join("")}</span>`).join("");
+  if (qid === "s_style") return vals.map(x => `<img src="../questionnaire/assets/styles/${x==="contemporary"||x==="midcentury" ? x+"_1" : x+"_1"}.jpg" title="${esc(x)}">`).join("");
+  if (!q || !q.options) return "";
+  return vals.map(x => { const o = q.options.find(o => o.v === x);
+    return o && o.img ? `<img src="../questionnaire/assets/opts/${o.img}.jpg" title="${esc(x)}">` : ""; }).join("");
+}
+
+function subSections(s) {
+  // preferred: the snapshot saved at submit time (complete + client's language)
+  if (Array.isArray(s.summary) && s.summary.length)
+    return s.summary.map(sec => ({ sec: sec.sec, rows: (sec.rows||[]).map(r => ({ q:r.q, a:r.a, id:r.id })) }));
+  // fallback for old submissions: walk the current questionnaire schema
+  const d = s.data || {}, out = [];
   for (const sc of scopes()) {
     if (sc.kind === "section") {
-      const rows = qList(sc).map(q => { const val = fmtAnswer(q, d); return val===null?"":`<div class="ans-row"><div class="k">${esc(tr(q.label,"en"))}</div><div class="v">${esc(val)}</div></div>`; }).join("");
-      if (rows) answers += `<div class="ans-sec">${esc(sc.title)}</div>${rows}`;
+      const rows = qList(sc).map(q => { const a = fmtAnswer(q, d); return a===null?null:{ q:tr(q.label,"en"), a, id:q.id }; }).filter(Boolean);
+      if (rows.length) out.push({ sec: sc.title, rows });
     } else {
       for (let i = 1; i <= 8; i++) {
         const prefix = (sc.key==="bedroom"?"b":"w") + i + "_";
         if (!Object.keys(d).some(k => k.startsWith(prefix))) continue;
-        const rows = qList(sc).map(q => { const val = fmtAnswer(q, d, prefix); return val===null?"":`<div class="ans-row"><div class="k">${esc(tr(q.label,"en"))}</div><div class="v">${esc(val)}</div></div>`; }).join("");
-        if (rows) answers += `<div class="ans-sec">${sc.title} ${i}</div>${rows}`;
+        const rows = qList(sc).map(q => { const a = fmtAnswer(q, d, prefix); return a===null?null:{ q:tr(q.label,"en"), a, id:prefix+q.id }; }).filter(Boolean);
+        if (rows.length) out.push({ sec: `${sc.title} ${i}`, rows });
       }
     }
   }
-  return `<div class="overlay" id="ovl"><div class="panel">
-    <div style="display:flex;justify-content:space-between;align-items:start;gap:14px">
-      <div><h2>${esc(s.client_name||"—")}</h2>
-      <div class="meta">${new Date(s.created_at).toLocaleString("en-GB")} · ${esc(s.client_email||"")} · ${esc(s.client_phone||"")}</div></div>
-      <button class="btn ghost sm" data-act="closeovl">✕ Close</button></div>
-    <div class="mb-mini">${styleCells}${palCells}${matCells}</div>
-    ${answers}
-  </div></div>`;
+  // catch-all: anything in data not covered above
+  const seen = new Set(out.flatMap(x => x.rows.map(r => r.id)));
+  const extras = Object.keys(d).filter(k => !seen.has(k) && !k.endsWith("_other") && typeof d[k] !== "object")
+    .map(k => ({ q:k, a:String(d[k]), id:k }));
+  if (extras.length) out.push({ sec:"Other", rows: extras });
+  return out;
+}
+
+function renderSubDetail() {
+  const s = SUBS && SUBS.find(x => x.id === CUR_SUB);
+  if (!s) { VIEW = "submissions"; renderSubs(); return; }
+  const d = new Date(s.created_at);
+  const secs = subSections(s).map(sec => `<div class="subd-sec"><h2>${esc(sec.sec)}</h2>
+    ${sec.rows.map(r => `<div class="subd-row"><div class="k">${esc(r.q)}</div>
+      <div class="v">${valueVisuals(r.id, s.data)}<span>${esc(r.a)}</span></div></div>`).join("")}</div>`).join("");
+  $("#main").innerHTML = `<div class="wrap">
+    <button class="backlink" data-act="backsubs">← All submissions</button>
+    <div class="subd-head">
+      <div><h1>${esc(s.client_name||"—")}</h1>
+        <div class="meta">${d.toLocaleString("en-GB")} · ${esc(s.client_email||"—")} · ${esc(s.client_phone||"—")} · ${(s.lang||"").toUpperCase()}</div></div>
+      <div style="display:flex;gap:10px">
+        <a class="btn ghost sm" href="mailto:${esc(s.client_email||"")}">✉ Reply</a>
+        <button class="btn danger sm" data-act="delsub-detail" data-id="${s.id}">🗑 Delete</button></div>
+    </div>
+    <div class="subd-cols">${secs}</div></div>`;
+  window.scrollTo(0,0);
 }
 
 /* ---------- CSV ---------- */
@@ -380,8 +417,11 @@ document.addEventListener("click", async e => {
     else eq.options.splice(+el.dataset.oi,1);
     renderQuestions();
   }
-  else if (act === "view") { const s = SUBS.find(x => x.id === el.dataset.id); if (s) document.body.insertAdjacentHTML("beforeend", detailHtml(s)); }
-  else if (act === "closeovl") { $("#ovl").remove(); }
+  else if (act === "view") { CUR_SUB = el.dataset.id; VIEW = "subdetail"; renderSubDetail(); }
+  else if (act === "backsubs") { VIEW = "submissions"; renderSubs(); }
+  else if (act === "delsub-detail") { if (confirm("Delete this submission permanently?")) {
+    const r = await api(`/rest/v1/submissions?id=eq.${el.dataset.id}`, { method:"DELETE" });
+    if (r.ok) { SUBS = SUBS.filter(x => x.id !== el.dataset.id); VIEW = "submissions"; renderSubs(); } } }
   else if (act === "delsub") { if (confirm("Delete this submission permanently?")) {
     const r = await api(`/rest/v1/submissions?id=eq.${el.dataset.id}`, { method:"DELETE" });
     if (r.ok) { SUBS = SUBS.filter(x => x.id !== el.dataset.id); renderSubs(); } } }
