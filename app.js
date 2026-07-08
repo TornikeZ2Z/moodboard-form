@@ -2,7 +2,6 @@
    QUESTIONNAIRE ENGINE — wizard, dynamic sections, moodboard
    ============================================================ */
 "use strict";
-window.__ck=[];
 
 /* ---------- helpers ---------- */
 const $ = s => document.querySelector(s);
@@ -617,7 +616,6 @@ async function downloadPdf() {
 }
 
 /* ---------- events ---------- */
-window.__ck.push("ev");
 stage.addEventListener("input", e => {
   const id = e.target.dataset.inp;
   if (id) { D[id] = e.target.value; save(); }
@@ -699,7 +697,6 @@ $("#btnNext").onclick = async () => {
 };
 
 /* ---------- lightbox ---------- */
-window.__ck.push("lb");
 const lb = $("#lightbox");
 function openLightbox(cap) {
   lb.hidden = false;
@@ -727,8 +724,7 @@ document.addEventListener("keydown", e => {
 function setLang(l) {
   state.lang = l; save();
   document.documentElement.lang = l === "ge" ? "ka" : l;
-  window.__ck.push("lang");
-document.querySelectorAll("#langSwitch button").forEach(b => b.classList.toggle("active", b.dataset.lang === l));
+  document.querySelectorAll("#langSwitch button").forEach(b => b.classList.toggle("active", b.dataset.lang === l));
   $("#brandSub").textContent = T("ui_brandSub");
   renderStepPreserveScroll();
 }
