@@ -486,15 +486,21 @@ function renderStep() {
     navbar.style.display = "none"; progress.style.display = "none";
     const qCount = steps.filter(s=>s.qs).reduce((a,s)=>a+s.qs.length,0);
     stage.innerHTML = `<div class="welcome">
-      <div class="wl-kicker">${esc(T("ui_wlKicker"))}</div>
-      <h1>${esc(T("ui_wlTitle"))}</h1>
-      <p>${esc(T("ui_wlText"))}</p>
-      <div class="meta">
-        <div><b>~15</b>${esc(T("ui_wlMin"))}</div>
-        <div><b>${qCount}</b>${esc(T("ui_wlQ"))}</div>
-        <div><b>3</b>${esc(T("ui_wlLang"))}</div>
+      <div class="wl-copy">
+        <div class="wl-kicker"><i></i>${esc(T("ui_wlKicker"))}</div>
+        <h1>${esc(T("ui_wlTitle"))}</h1>
+        <p>${esc(T("ui_wlText"))}</p>
+        <div class="meta">
+          <div><b>~15</b>${esc(T("ui_wlMin"))}</div>
+          <div><b>${qCount}</b>${esc(T("ui_wlQ"))}</div>
+          <div><b>3</b>${esc(T("ui_wlLang"))}</div>
+        </div>
+        <button class="btn primary big" id="btnStart">${esc(T("ui_start"))} <span class="arr">→</span></button>
       </div>
-      <button class="btn primary" id="btnStart" style="font-size:16px;padding:15px 44px">${esc(T("ui_start"))}</button>
+      <figure class="wl-figure">
+        <div class="frame"></div>
+        <div class="imgwrap"><img src="../site-assets/projects/private-apartment/01.jpg" alt=""></div>
+      </figure>
     </div>`;
     $("#btnStart").onclick = () => { state.step = 1; save(); renderStep(); window.scrollTo(0,0); };
     return;
@@ -506,24 +512,30 @@ function renderStep() {
 
   if (st.type === "review") {
     stage.innerHTML = sectionHead(st) + renderReview(steps);
-    $("#btnNext").textContent = T("ui_submit");
+    $("#btnNext").innerHTML = esc(T("ui_submit"));
   } else {
     const qs = st.qs.filter(q => !q.show || q.show(D));
     qs.forEach(q => { if (q.t === "num" && D[q.id] === undefined) { D[q.id] = q.min; } });
     stage.innerHTML = sectionHead(st) + qs.map(q => qHtml(q, D)).join("") +
       `<div class="q-note" style="margin:6px 4px">${esc(T("ui_reqNote"))}</div>`;
-    $("#btnNext").textContent = T("ui_next");
+    $("#btnNext").innerHTML = esc(T("ui_next")) + ' <span class="arr">→</span>';
   }
-  $("#btnBack").textContent = T("ui_back");
+  $("#btnBack").textContent = "← " + T("ui_back");
   $("#btnBack").style.visibility = state.step <= 1 ? "hidden" : "visible";
-  $("#navHint").textContent = "";
+  {
+    const list = steps.filter(s => s.type !== "welcome" && s.type !== "final");
+    const iNow = list.indexOf(st);
+    $("#navHint").textContent = iNow >= 0 ? `${iNow+1} / ${list.length}` : "";
+  }
+  if (window.__lastStep !== st.id) { window.__lastStep = st.id;
+    stage.classList.remove("in"); void stage.offsetWidth; stage.classList.add("in"); }
   save();
 }
 
 function sectionHead(st) {
   const title = st.titleRaw ? st.titleRaw() : T(st.title);
-  return `<div class="section-head">
-    <div class="section-kicker">${st.num||""} — ${esc(T(st.icon))}</div>
+  return `<div class="section-head" data-ghost="${st.num||""}">
+    <div class="section-kicker"><i></i>${st.num||""} — ${esc(T(st.icon))}</div>
     <div class="section-title">${esc(title)}</div>
     <div class="section-sub">${esc(T(st.sub))}</div></div>`;
 }
@@ -533,8 +545,11 @@ function renderProgress(steps) {
   const iNow = list.indexOf(steps[state.step]);
   $("#progressSteps").innerHTML = list.map((s,i) => {
     const label = s.chip ? (typeof s.chip === "function" ? s.chip() : s.chip) : T(s.icon);
-    return `<span class="${i===iNow?"now":i<iNow?"done":""}">${esc(label)}</span>`;
+    const mark = i < iNow ? "✓" : String(i+1).padStart(2,"0");
+    return `<span class="pstep ${i===iNow?"now":i<iNow?"done":""}"><i>${mark}</i>${esc(label)}</span>`;
   }).join("");
+  const nowEl = document.querySelector(".pstep.now");
+  if (nowEl) nowEl.scrollIntoView({ inline:"center", block:"nearest", behavior:"smooth" });
   $("#progressFill").style.width = Math.round((iNow) / Math.max(list.length-1,1) * 100) + "%";
 }
 
