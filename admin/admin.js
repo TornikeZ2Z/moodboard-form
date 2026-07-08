@@ -414,6 +414,7 @@ document.querySelectorAll("#tabs button").forEach(b => b.onclick = async () => {
   VIEW = b.dataset.view;
   document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b));
   if (VIEW === "submissions") { renderSubs(); if (!SUBS) { await loadSubs(); renderSubs(); } }
+  else if (VIEW === "projects") { renderProjects(); if (!PROJ) { await loadProjects(); renderProjects(); } }
   else renderQuestions();
   updateSavebar();
 });
@@ -428,3 +429,168 @@ async function boot() {
   VIEW = "questions"; renderQuestions(); updateSavebar();
 }
 boot();
+
+/* ============================================================
+   PROJECTS CMS
+   ============================================================ */
+let PROJ = null, PED = null; // PED = open editor slug
+const CATS = [["residential","Residential"],["hospitality","Hospitality"],["retail","Retail"],["workspace","Workspace"]];
+const relImg = u => /^https?:/.test(u) ? u : "../" + u;
+const pubUrl = path => `${AURL}/storage/v1/object/public/project-photos/${path}`;
+
+async function loadProjects() {
+  const r = await api(`/rest/v1/projects?order=sort.asc&select=*`);
+  PROJ = await r.json();
+}
+async function saveProject(p, isNew) {
+  const body = JSON.stringify({ slug:p.slug, name:p.name, loc:p.loc, status:p.status, cat:p.cat,
+    description:p.description, cover:p.cover, gallery:p.gallery, sort:p.sort, visible:p.visible });
+  const r = isNew
+    ? await api(`/rest/v1/projects`, { method:"POST", headers:{ Prefer:"return=representation" }, body })
+    : await api(`/rest/v1/projects?id=eq.${p.id}`, { method:"PATCH", headers:{ Prefer:"return=representation" }, body });
+  if (!r.ok) throw new Error("Save failed (" + r.status + ")");
+  const rows = await r.json(); return rows[0];
+}
+
+function renderProjects() {
+  if (!PROJ) { $("#main").innerHTML = `<div class="wrap"><div class="empty"><span class="spin"></span> Loading projects…</div></div>`; return; }
+  $("#savebar").classList.add("hidden");
+  const rows = PROJ.map((p, i) => {
+    const open = PED === p.slug;
+    return `<div class="sec" data-slug="${esc(p.slug)}">
+      <div class="sec-head">
+        <button class="sw ${p.visible?"on":""}" data-pact="pvis" data-slug="${esc(p.slug)}" title="Show / hide on site"></button>
+        <span class="q-move">
+          <button data-pact="pup" data-slug="${esc(p.slug)}" title="Move up">▲</button>
+          <button data-pact="pdown" data-slug="${esc(p.slug)}" title="Move down">▼</button></span>
+        <img src="${relImg(p.cover)}" style="width:52px;height:38px;object-fit:cover;border-radius:2px">
+        <h2 style="flex:1">${esc(p.name)} <span style="color:var(--muted);font-size:11px;text-transform:none;letter-spacing:0"> · ${esc(p.loc||"")} · ${p.gallery.length} photos</span></h2>
+        <span class="badge">${esc(p.cat)}</span>
+        <button class="btn ghost sm" data-pact="pedit" data-slug="${esc(p.slug)}">${open?"Close":"Edit"}</button>
+        <button class="iconb" data-pact="pdel" data-slug="${esc(p.slug)}" title="Delete project">🗑</button>
+      </div>
+      ${open ? projEditor(p) : ""}</div>`;
+  }).join("");
+  $("#main").innerHTML = `<div class="wrap">
+    <div class="toolrow"><h1>Projects <span style="color:var(--muted);font-size:15px">· ${PROJ.length}</span></h1>
+      <button class="btn" data-pact="pnew">+ New project</button></div>
+    <div class="hint" style="margin-bottom:10px">Every change here saves to the live site the moment you press “Save project”. Photo uploads are stored in Supabase.</div>
+    ${rows}</div>`;
+}
+
+function projEditor(p) {
+  const gal = p.gallery.map((g, k) => `
+    <div style="position:relative;break-inside:avoid;margin-bottom:10px">
+      <img src="${relImg(g)}" style="width:100%;border-radius:2px;${p.cover===g?"outline:3px solid var(--indigo);outline-offset:-3px":""}">
+      <div style="display:flex;gap:4px;position:absolute;top:6px;right:6px">
+        <button class="iconb" style="background:#fff" data-pact="gleft"  data-slug="${esc(p.slug)}" data-k="${k}" title="Move earlier">←</button>
+        <button class="iconb" style="background:#fff" data-pact="gright" data-slug="${esc(p.slug)}" data-k="${k}" title="Move later">→</button>
+        <button class="iconb" style="background:#fff" data-pact="gcover" data-slug="${esc(p.slug)}" data-k="${k}" title="Set as cover">★</button>
+        <button class="iconb" style="background:#fff;color:var(--bad)" data-pact="gdel" data-slug="${esc(p.slug)}" data-k="${k}" title="Remove">✕</button>
+      </div>${p.cover===g?'<span class="badge" style="position:absolute;left:6px;top:6px;background:var(--indigo);color:#fff">cover</span>':""}
+    </div>`).join("");
+  return `<div class="editor" data-pslug="${esc(p.slug)}">
+    <div class="grid3">
+      <div><label>Name</label><input data-pf="name" value="${esc(p.name)}"></div>
+      <div><label>Location</label><input data-pf="loc" value="${esc(p.loc||"")}"></div>
+      <div><label>Status tag (optional)</label><input data-pf="status" value="${esc(p.status||"")}" placeholder="Ongoing / Completed / Concept…"></div>
+    </div>
+    <div class="grid3">
+      <div><label>Category</label><select data-pf="cat">${CATS.map(c=>`<option value="${c[0]}" ${p.cat===c[0]?"selected":""}>${c[1]}</option>`).join("")}</select></div>
+      <div><label>Slug (URL)</label><input data-pf="slug" value="${esc(p.slug)}" ${p.id?"disabled":""}></div>
+      <div><label>Visible</label><select data-pf="visible"><option value="1" ${p.visible?"selected":""}>Yes</option><option value="0" ${!p.visible?"selected":""}>Hidden</option></select></div>
+    </div>
+    <label>Description (shown on the project page)</label>
+    <textarea data-pf="description" style="width:100%;min-height:90px;border:1px solid var(--line);border-radius:2px;padding:10px;font-family:var(--hank);font-size:13.5px">${esc(p.description||"")}</textarea>
+    <label>Photos — ★ sets the cover, arrows reorder</label>
+    <div style="column-count:4;column-gap:10px">${gal}</div>
+    <div class="row-actions">
+      <label class="btn ghost sm" style="cursor:pointer">⬆ Upload photos<input type="file" accept="image/*" multiple data-pact="gupload" data-slug="${esc(p.slug)}" style="display:none"></label>
+      <button class="btn sm" data-pact="psave" data-slug="${esc(p.slug)}">Save project</button>
+      <span class="hint" id="pstate-${esc(p.slug)}"></span>
+    </div>
+  </div>`;
+}
+
+const findProj = slug => PROJ.find(x => x.slug === slug);
+
+async function uploadPhotos(p, files) {
+  const st = $("#pstate-" + p.slug);
+  let done = 0;
+  for (const f of files) {
+    st.innerHTML = `<span class="spin"></span> Uploading ${++done}/${files.length}…`;
+    const small = await shrinkImage(f, 1600, .84);
+    const path = `${p.slug}/${Date.now().toString(36)}_${f.name.replace(/[^a-z0-9.]+/gi,"-").toLowerCase()}`;
+    const r = await api(`/storage/v1/object/project-photos/${path}`, { method:"POST",
+      headers:{ "Content-Type":"image/jpeg", "x-upsert":"true" }, body: small });
+    if (r.ok) p.gallery.push(pubUrl(path));
+  }
+  st.textContent = "";
+}
+function shrinkImage(file, max, q) {
+  return new Promise(res => {
+    const img = new Image();
+    img.onload = () => {
+      let { width:w, height:h } = img;
+      if (w > max) { h = h*max/w; w = max; } if (h > max) { w = w*max/h; h = max; }
+      const c = document.createElement("canvas"); c.width = w; c.height = h;
+      c.getContext("2d").drawImage(img, 0, 0, w, h);
+      c.toBlob(res, "image/jpeg", q);
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+document.addEventListener("change", async e => {
+  const up = e.target.closest('[data-pact="gupload"]'); if (!up) return;
+  const p = findProj(up.dataset.slug);
+  await uploadPhotos(p, [...e.target.files]);
+  renderProjects();
+});
+
+document.addEventListener("click", async e => {
+  const el = e.target.closest("[data-pact]"); if (!el) return;
+  const act = el.dataset.pact;
+  const p = el.dataset.slug ? findProj(el.dataset.slug) : null;
+  const persist = async (proj) => { try { const saved = await saveProject(proj, !proj.id); if (saved) Object.assign(proj, saved); } catch(err) { alert(err.message); } };
+
+  if (act === "pedit") { PED = PED === el.dataset.slug ? null : el.dataset.slug; renderProjects(); }
+  else if (act === "pvis" && p) { p.visible = !p.visible; await persist(p); renderProjects(); }
+  else if ((act === "pup" || act === "pdown") && p) {
+    const i = PROJ.indexOf(p), j = act === "pup" ? i-1 : i+1;
+    if (j < 0 || j >= PROJ.length) return;
+    [PROJ[i], PROJ[j]] = [PROJ[j], PROJ[i]];
+    PROJ.forEach((x, k) => x.sort = k);
+    await persist(PROJ[i]); await persist(PROJ[j]); renderProjects();
+  }
+  else if (act === "pdel" && p) { if (confirm(`Delete “${p.name}” from the site?`)) {
+    const r = await api(`/rest/v1/projects?id=eq.${p.id}`, { method:"DELETE" });
+    if (r.ok) { PROJ = PROJ.filter(x => x !== p); renderProjects(); } } }
+  else if (act === "pnew") {
+    const slug = "project-" + Date.now().toString(36);
+    PROJ.unshift({ slug, name:"New project", loc:"", status:"", cat:"residential", description:"", cover:"", gallery:[], sort:-1, visible:false });
+    PROJ.forEach((x,k)=>x.sort=k); PED = slug; renderProjects();
+  }
+  else if (act === "psave" && p) {
+    const box = document.querySelector(`[data-pslug="${p.slug}"]`);
+    p.name = box.querySelector('[data-pf="name"]').value.trim();
+    p.loc = box.querySelector('[data-pf="loc"]').value.trim();
+    p.status = box.querySelector('[data-pf="status"]').value.trim();
+    p.cat = box.querySelector('[data-pf="cat"]').value;
+    p.visible = box.querySelector('[data-pf="visible"]').value === "1";
+    p.description = box.querySelector('[data-pf="description"]').value;
+    const slugIn = box.querySelector('[data-pf="slug"]');
+    if (!slugIn.disabled) p.slug = slugIn.value.trim().toLowerCase().replace(/[^a-z0-9-]+/g,"-") || p.slug;
+    if (!p.cover && p.gallery.length) p.cover = p.gallery[0];
+    const st = $("#pstate-" + p.slug); if (st) st.innerHTML = `<span class="spin"></span> Saving…`;
+    await persist(p); PED = p.slug; renderProjects();
+  }
+  else if (["gleft","gright","gcover","gdel"].includes(act) && p) {
+    const k = +el.dataset.k;
+    if (act === "gcover") p.cover = p.gallery[k];
+    if (act === "gdel") { const rm = p.gallery.splice(k,1)[0]; if (p.cover === rm) p.cover = p.gallery[0]||""; }
+    if (act === "gleft" && k > 0) [p.gallery[k-1],p.gallery[k]] = [p.gallery[k],p.gallery[k-1]];
+    if (act === "gright" && k < p.gallery.length-1) [p.gallery[k+1],p.gallery[k]] = [p.gallery[k],p.gallery[k+1]];
+    await persist(p); renderProjects();
+  }
+});

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project — Espacio Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Hanken+Grotesk:wght@300;400;500;600&family=Allura&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#16161c;--ink-soft:#3a3a44;--indigo:#4e44e6;--paper:#fbfbfe;--paper-2:#f4f3fb;--wash:#eceafb;--muted:#8a8a93;--line:#e6e6ef;--gut:clamp(20px,5vw,72px);--maxw:1320px;--ease:cubic-bezier(.22,.61,.36,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Hanken Grotesk",system-ui,sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none} img{display:block;max-width:100%}
+header.nav{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;justify-content:space-between;padding:15px var(--gut);background:rgba(251,251,254,.85);backdrop-filter:blur(14px);box-shadow:0 1px 0 var(--line)}
+.brand{display:flex;align-items:baseline;gap:.18em;font-family:"Archivo",sans-serif;font-weight:800;font-size:1.05rem;letter-spacing:.02em;text-transform:uppercase}
+.brand .s{font-family:"Allura",cursive;font-weight:400;font-size:1.7rem;color:var(--indigo);text-transform:none;line-height:0;transform:translateY(.06em)}
+.navlinks{display:flex;gap:22px;align-items:center}
+.navlinks a{font-family:"Archivo",sans-serif;font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-soft)}
+.navlinks a:hover{color:var(--indigo)}
+.navlinks a.cta{color:var(--indigo)}
+.hero{position:relative;height:clamp(380px,62vh,640px);overflow:hidden;margin-top:57px}
+.hero img{width:100%;height:100%;object-fit:cover}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,22,40,.05),rgba(22,22,40,.62) 88%)}
+.hero .inner{position:absolute;left:0;right:0;bottom:0;z-index:2;color:#fff;max-width:var(--maxw);margin:0 auto;padding:0 var(--gut) clamp(24px,4vh,44px)}
+.eyebrow{display:flex;align-items:center;gap:12px;font-family:"Archivo",sans-serif;font-size:.72rem;letter-spacing:.24em;text-transform:uppercase;font-weight:600}
+.eyebrow i{display:inline-block;width:30px;height:2px;background:#fff}
+.hero h1{font-family:"Archivo",sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:-.02em;line-height:.96;font-size:clamp(2.2rem,6.5vw,4.6rem);margin-top:14px;color:#fff}
+.meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.tag{font-family:"Archivo",sans-serif;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.14);backdrop-filter:blur(4px);padding:6px 12px;border-radius:30px;color:#fff}
+.body{max-width:var(--maxw);margin:0 auto;padding:clamp(36px,6vh,64px) var(--gut)}
+.lede{font-size:clamp(1.02rem,1.4vw,1.22rem);font-weight:300;color:var(--ink-soft);max-width:62ch}
+.lede b{font-weight:600;color:var(--ink)}
+.gallery{column-count:3;column-gap:clamp(12px,1.5vw,22px);margin-top:clamp(30px,5vh,52px)}
+@media(max-width:1000px){.gallery{column-count:2}}
+@media(max-width:620px){.gallery{column-count:1}}
+.gallery .ph{position:relative;margin:0 0 clamp(12px,1.5vw,22px);break-inside:avoid;overflow:hidden;border-radius:2px;cursor:zoom-in;background:var(--paper-2)}
+.gallery .ph img{width:100%;transition:transform .8s var(--ease)}
+.gallery .ph:hover img{transform:scale(1.04)}
+.pn{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);margin-top:clamp(40px,7vh,70px)}
+.pn a{padding:26px var(--gut);font-family:"Archivo",sans-serif;text-transform:uppercase;font-weight:700;letter-spacing:-.01em;font-size:clamp(1rem,2vw,1.4rem);display:flex;flex-direction:column;gap:5px;transition:background .3s,color .3s}
+.pn a:hover{background:var(--wash);color:var(--indigo)}
+.pn a small{font-family:"Archivo",sans-serif;font-size:.64rem;letter-spacing:.2em;color:var(--muted);font-weight:600}
+.pn a.next{text-align:right;align-items:flex-end;border-left:1px solid var(--line)}
+.ctaband{background:var(--indigo);color:#fff;text-align:center;padding:clamp(44px,8vh,80px) var(--gut)}
+.ctaband h2{font-family:"Archivo",sans-serif;font-weight:800;text-transform:uppercase;font-size:clamp(1.6rem,4vw,2.6rem);letter-spacing:-.01em}
+.ctaband h2 em{font-family:"Allura",cursive;font-style:normal;font-weight:400;text-transform:none;font-size:1.15em}
+.btn{display:inline-flex;align-items:center;gap:10px;font-family:"Archivo",sans-serif;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;font-weight:600;background:#fff;color:var(--indigo);padding:15px 26px;border-radius:2px;margin-top:24px;transition:.25s}
+.btn:hover{background:var(--ink);color:#fff}
+footer{padding:34px var(--gut);border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;font-size:.78rem;color:var(--muted)}
+.lb{position:fixed;inset:0;z-index:90;background:rgba(16,16,24,.94);display:none;align-items:center;justify-content:center;flex-direction:column}
+.lb.open{display:flex}
+.lb img{max-width:92vw;max-height:82vh;border-radius:2px}
+.lb .x{position:absolute;top:16px;right:20px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:none;color:#fff;font-size:17px;cursor:pointer}
+.lb .x:hover{background:#fff;color:var(--ink)}
+.lb .nav{position:absolute;top:50%;transform:translateY(-50%);width:50px;height:50px;border-radius:50%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:20px;cursor:pointer}
+.lb .prev{left:14px}.lb .next{right:14px}
+.lb .cap{color:rgba(255,255,255,.75);font-size:.8rem;margin-top:14px;letter-spacing:.08em;font-family:"Archivo",sans-serif}
+.notfound{min-height:60vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;padding-top:57px}
+</style>
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="../">ESPACIO<span class="s">Studio</span></a>
+  <nav class="navlinks">
+    <a href="../#work">← All projects</a>
+    <a href="../questionnaire/" class="cta">Start a project</a>
+  </nav>
+</header>
+<div id="app"></div>
+<div class="lb" id="lb"><button class="x" id="lbX">✕</button>
+  <button class="nav prev" id="lbP">←</button><img id="lbI" alt=""><button class="nav next" id="lbN">→</button>
+  <div class="cap" id="lbC"></div></div>
+<script>
+const SUPA_URL="https://coxsphbxxmotohicnosf.supabase.co";
+const SUPA_KEY="sb_publishable_dkgH0mhJpxnR32-ulcw5NA_ek9w17aU";
+const FALLBACK=[{"slug": "okrokana", "name": "Okrokana Residence", "loc": "Okrokana, Georgia", "status": "Ongoing", "cat": "residential", "description": "A hillside family residence above Tbilisi where raw concrete ceilings meet warm oak and gallery walls. Generous glazing pulls the Okrokana landscape into every room, and a roof terrace with an outdoor lounge extends summer living. The children's rooms and master suite each carry a palette of their own.", "cover": "site-assets/projects/okrokana/03.jpg", "gallery": ["site-assets/projects/okrokana/01.jpg", "site-assets/projects/okrokana/02.jpg", "site-assets/projects/okrokana/03.jpg", "site-assets/projects/okrokana/04.jpg", "site-assets/projects/okrokana/05.jpg", "site-assets/projects/okrokana/06.jpg", "site-assets/projects/okrokana/07.jpg", "site-assets/projects/okrokana/08.jpg", "site-assets/projects/okrokana/09.jpg", "site-assets/projects/okrokana/10.jpg"]}, {"slug": "park-home", "name": "Park Home Apartment", "loc": "Vake, Tbilisi", "status": "Completed", "cat": "residential", "description": "A city apartment built around a green velvet living landscape and a web of black steel lighting. Behind calm oak joinery hides a full family program \u2014 a work niche, open shelving displays and stone bathrooms with green ceramic accents.", "cover": "site-assets/projects/park-home/01.jpg", "gallery": ["site-assets/projects/park-home/01.jpg", "site-assets/projects/park-home/02.jpg", "site-assets/projects/park-home/03.jpg", "site-assets/projects/park-home/04.jpg", "site-assets/projects/park-home/05.jpg", "site-assets/projects/park-home/06.jpg", "site-assets/projects/park-home/07.jpg", "site-assets/projects/park-home/08.jpg", "site-assets/projects/park-home/09.jpg", "site-assets/projects/park-home/10.jpg", "site-assets/projects/park-home/11.jpg"]}, {"slug": "dadiani", "name": "Dadiani Apartment", "loc": "Dadiani Street, Tbilisi", "status": "Ongoing", "cat": "residential", "description": "A characterful apartment where deep green cabinetry, burgundy accents and brass details play against softly washed walls. The dining table doubles as a library desk, and the bathroom turns the palette up with a wine-red ceiling over checkered tile.", "cover": "site-assets/projects/dadiani/02.jpg", "gallery": ["site-assets/projects/dadiani/01.jpg", "site-assets/projects/dadiani/02.jpg", "site-assets/projects/dadiani/03.jpg", "site-assets/projects/dadiani/04.jpg", "site-assets/projects/dadiani/05.jpg", "site-assets/projects/dadiani/06.jpg", "site-assets/projects/dadiani/07.jpg", "site-assets/projects/dadiani/08.jpg"]}, {"slug": "jikia", "name": "Jikia Apartment", "loc": "Jikia Street, Tbilisi", "status": "Ongoing", "cat": "residential", "description": "A light-filled family apartment in pastel tones \u2014 an olive sofa, a pale timber kitchen and art-splashed walls. The compact bathroom makes the statement: oxblood red over patterned cement tiles.", "cover": "site-assets/projects/jikia/03.jpg", "gallery": ["site-assets/projects/jikia/01.jpg", "site-assets/projects/jikia/02.jpg", "site-assets/projects/jikia/03.jpg", "site-assets/projects/jikia/04.jpg", "site-assets/projects/jikia/05.jpg", "site-assets/projects/jikia/06.jpg", "site-assets/projects/jikia/07.jpg"]}, {"slug": "private-apartment", "name": "Private Apartment", "loc": "Tbilisi, Georgia", "status": "", "cat": "residential", "description": "A serene apartment in layered creams and greys: curved plaster details, a bedroom wrapped in upholstered panels and a corridor display wall that works like a private gallery. Soft green textiles keep it warm and lived-in.", "cover": "site-assets/projects/private-apartment/01.jpg", "gallery": ["site-assets/projects/private-apartment/01.jpg", "site-assets/projects/private-apartment/02.jpg", "site-assets/projects/private-apartment/03.jpg", "site-assets/projects/private-apartment/04.jpg", "site-assets/projects/private-apartment/05.jpg", "site-assets/projects/private-apartment/06.jpg", "site-assets/projects/private-apartment/07.jpg", "site-assets/projects/private-apartment/08.jpg", "site-assets/projects/private-apartment/09.jpg", "site-assets/projects/private-apartment/10.jpg", "site-assets/projects/private-apartment/11.jpg", "site-assets/projects/private-apartment/12.jpg"]}, {"slug": "apartment-design", "name": "Apartment Design", "loc": "Tbilisi, Georgia", "status": "Completed", "cat": "residential", "description": "A complete apartment design in warm minimalism \u2014 glass partitions zone the living space, sculptural pendants float above linen seating, and the bedrooms pair textured feature walls with quiet, indirect light.", "cover": "site-assets/projects/apartment-design/02.jpg", "gallery": ["site-assets/projects/apartment-design/01.jpg", "site-assets/projects/apartment-design/02.jpg", "site-assets/projects/apartment-design/03.jpg", "site-assets/projects/apartment-design/04.jpg", "site-assets/projects/apartment-design/05.jpg", "site-assets/projects/apartment-design/06.jpg", "site-assets/projects/apartment-design/07.jpg", "site-assets/projects/apartment-design/08.jpg", "site-assets/projects/apartment-design/09.jpg", "site-assets/projects/apartment-design/10.jpg"]}, {"slug": "retail-designs", "name": "Retail Designs", "loc": "Tbilisi, Georgia", "status": "Completed", "cat": "retail", "description": "Retail environments with a theatrical streak: oversized botanical installations over raw concrete, black-and-gold display counters and jewel-box lighting composed for beauty and fashion brands.", "cover": "site-assets/projects/retail-designs/03.jpg", "gallery": ["site-assets/projects/retail-designs/01.jpg", "site-assets/projects/retail-designs/02.jpg", "site-assets/projects/retail-designs/03.jpg", "site-assets/projects/retail-designs/04.jpg", "site-assets/projects/retail-designs/05.jpg"]}, {"slug": "cafe-praline", "name": "Caf\u00e9 Praline", "loc": "Tbilisi, Georgia", "status": "Completed", "cat": "hospitality", "description": "A patisserie in cream and pistachio: glass-block partitions, globe pendants and botanical murals. The long pastry counter anchors the room, while an amber velvet corner glows after dark.", "cover": "site-assets/projects/cafe-praline/03.jpg", "gallery": ["site-assets/projects/cafe-praline/01.jpg", "site-assets/projects/cafe-praline/02.jpg", "site-assets/projects/cafe-praline/03.jpg", "site-assets/projects/cafe-praline/04.jpg", "site-assets/projects/cafe-praline/05.jpg", "site-assets/projects/cafe-praline/06.jpg", "site-assets/projects/cafe-praline/07.jpg", "site-assets/projects/cafe-praline/08.jpg", "site-assets/projects/cafe-praline/09.jpg", "site-assets/projects/cafe-praline/10.jpg", "site-assets/projects/cafe-praline/11.jpg"]}, {"slug": "tourist-agency", "name": "Tourist Agency Office", "loc": "Tbilisi, Georgia", "status": "Ongoing", "cat": "workspace", "description": "A travel agency designed in two voices \u2014 one soft and residential with blush seating beneath departure boards, one crisp and corporate with ring chandeliers and acoustic clouds. Both are built around an open consulting floor.", "cover": "site-assets/projects/tourist-agency/06.jpg", "gallery": ["site-assets/projects/tourist-agency/01.jpg", "site-assets/projects/tourist-agency/02.jpg", "site-assets/projects/tourist-agency/03.jpg", "site-assets/projects/tourist-agency/04.jpg", "site-assets/projects/tourist-agency/05.jpg", "site-assets/projects/tourist-agency/06.jpg", "site-assets/projects/tourist-agency/07.jpg", "site-assets/projects/tourist-agency/08.jpg", "site-assets/projects/tourist-agency/09.jpg", "site-assets/projects/tourist-agency/10.jpg", "site-assets/projects/tourist-agency/11.jpg", "site-assets/projects/tourist-agency/12.jpg"]}, {"slug": "bakery-tortiko", "name": "Bakery Tortiko", "loc": "Samtredia, Georgia", "status": "", "cat": "hospitality", "description": "A neighbourhood bakery in honey-toned wood with a hand-lettered logo wall \u2014 and a display counter designed to put the morning pastries on stage.", "cover": "site-assets/projects/bakery-tortiko/03.jpg", "gallery": ["site-assets/projects/bakery-tortiko/01.jpg", "site-assets/projects/bakery-tortiko/02.jpg", "site-assets/projects/bakery-tortiko/03.jpg"]}, {"slug": "office-design", "name": "Office Design", "loc": "Tbilisi, Georgia", "status": "Ongoing", "cat": "workspace", "description": "A compact office with a hospitality heart \u2014 terracotta pendants, oak-lined meeting niches and travertine washrooms that feel anything but corporate.", "cover": "site-assets/projects/office-design/01.jpg", "gallery": ["site-assets/projects/office-design/01.jpg", "site-assets/projects/office-design/02.jpg", "site-assets/projects/office-design/03.jpg", "site-assets/projects/office-design/04.jpg", "site-assets/projects/office-design/05.jpg", "site-assets/projects/office-design/06.jpg"]}, {"slug": "dental-clinic", "name": "Dental Clinic", "loc": "Tbilisi, Georgia", "status": "Ongoing", "cat": "workspace", "description": "A clinic that calms rather than intimidates: soft grey volumes, a sculptural reception desk, indigo accents and daylight reaching every treatment room.", "cover": "site-assets/projects/dental-clinic/02.jpg", "gallery": ["site-assets/projects/dental-clinic/01.jpg", "site-assets/projects/dental-clinic/02.jpg", "site-assets/projects/dental-clinic/03.jpg", "site-assets/projects/dental-clinic/04.jpg"]}, {"slug": "comforter", "name": "Living Room \u00d7 Kitchen", "loc": "Partnership with Comforter", "status": "Partnership", "cat": "residential", "description": "A living room and kitchen concept created in partnership with Comforter \u2014 a graphite island with brass wire chairs, set against travertine surfaces and warm, focused light.", "cover": "site-assets/projects/comforter/01.jpg", "gallery": ["site-assets/projects/comforter/01.jpg", "site-assets/projects/comforter/02.jpg"]}, {"slug": "confidential-apartment", "name": "Private Apartment", "loc": "Confidential client", "status": "", "cat": "residential", "description": "A generous apartment for a private client \u2014 champagne tones, patterned oak floors and couture detailing. Sliding glass partitions offer two ways to live with the kitchen: open, or hidden away.", "cover": "site-assets/projects/confidential-apartment/01.jpg", "gallery": ["site-assets/projects/confidential-apartment/01.jpg", "site-assets/projects/confidential-apartment/02.jpg", "site-assets/projects/confidential-apartment/03.jpg", "site-assets/projects/confidential-apartment/04.jpg", "site-assets/projects/confidential-apartment/05.jpg", "site-assets/projects/confidential-apartment/06.jpg", "site-assets/projects/confidential-apartment/07.jpg", "site-assets/projects/confidential-apartment/08.jpg"]}, {"slug": "private-house-saguramo", "name": "Private House", "loc": "Saguramo, Georgia", "status": "Ongoing", "cat": "residential", "description": "A pitched-roof family house in Saguramo: a double-height lounge with a marble fireplace wall, mirrored display niches and bedrooms tucked under the timber roofline.", "cover": "site-assets/projects/private-house-saguramo/02.jpg", "gallery": ["site-assets/projects/private-house-saguramo/01.jpg", "site-assets/projects/private-house-saguramo/02.jpg", "site-assets/projects/private-house-saguramo/03.jpg", "site-assets/projects/private-house-saguramo/04.jpg", "site-assets/projects/private-house-saguramo/05.jpg", "site-assets/projects/private-house-saguramo/06.jpg"]}, {"slug": "cafe-ski-resort", "name": "Caf\u00e9 at Ski Resort", "loc": "Georgia", "status": "Concept", "cat": "hospitality", "description": "A concept for a ski-resort caf\u00e9 \u2014 rough stone walls, glossy black tables and a neon line dancing over the bar. Warm timber ceilings set the scene for the apr\u00e8s-ski hour.", "cover": "site-assets/projects/cafe-ski-resort/02.jpg", "gallery": ["site-assets/projects/cafe-ski-resort/01.jpg", "site-assets/projects/cafe-ski-resort/02.jpg", "site-assets/projects/cafe-ski-resort/03.jpg", "site-assets/projects/cafe-ski-resort/04.jpg", "site-assets/projects/cafe-ski-resort/05.jpg", "site-assets/projects/cafe-ski-resort/06.jpg", "site-assets/projects/cafe-ski-resort/07.jpg"]}];
+const CATL={residential:"Residential",hospitality:"Hospitality",retail:"Retail",workspace:"Workspace"};
+const slug=new URLSearchParams(location.search).get("p");
+const norm=u=>/^https?:/.test(u)?u:"../"+u;
+let ALL=FALLBACK, P=null, gi=0;
+
+async function load(){
+  try{
+    const r=await fetch(`${SUPA_URL}/rest/v1/projects?visible=eq.true&order=sort.asc&select=slug,name,loc,status,cat,description,cover,gallery`,{headers:{apikey:SUPA_KEY}});
+    if(r.ok){const rows=await r.json(); if(rows.length) ALL=rows;}
+  }catch(e){}
+  P=ALL.find(p=>p.slug===slug)||null;
+  render();
+}
+function render(){
+  const app=document.getElementById("app");
+  if(!P){app.innerHTML=`<div class="notfound"><div class="eyebrow" style="color:var(--muted)"><i style="background:var(--indigo)"></i>404</div><h1 style="font-family:Archivo;text-transform:uppercase">Project not found</h1><a class="btn" style="background:var(--indigo);color:#fff" href="../#work">All projects</a></div>`;return;}
+  document.title=`${P.name} — Espacio Studio`;
+  const i=ALL.indexOf(P), prev=ALL[(i-1+ALL.length)%ALL.length], next=ALL[(i+1)%ALL.length];
+  const tags=[P.loc,P.status,CATL[P.cat]||P.cat].filter(Boolean).map(t=>`<span class="tag">${t}</span>`).join("");
+  app.innerHTML=`
+  <section class="hero"><img src="${norm(P.cover)}" alt="${P.name}">
+    <div class="inner"><div class="eyebrow"><i></i>Espacio Studio — Selected Work</div>
+    <h1>${P.name}</h1><div class="meta">${tags}</div></div></section>
+  <section class="body">
+    <p class="lede">${P.description||""}</p>
+    <div class="gallery">${P.gallery.map((g,k)=>`<figure class="ph" data-k="${k}"><img src="${norm(g)}" loading="lazy" alt="${P.name} ${k+1}"></figure>`).join("")}</div>
+  </section>
+  <nav class="pn">
+    <a href="?p=${prev.slug}"><small>← Previous</small>${prev.name}</a>
+    <a class="next" href="?p=${next.slug}"><small>Next →</small>${next.name}</a>
+  </nav>
+  <section class="ctaband"><h2>Ready to design <em>your</em> space?</h2>
+    <a class="btn" href="../questionnaire/">Fill the design questionnaire →</a></section>
+  <footer><span>© <span id="yr"></span> Espacio Studio — Tbilisi</span><a href="mailto:info@espacio.ge">info@espacio.ge</a></footer>`;
+  document.getElementById("yr").textContent=new Date().getFullYear();
+  document.querySelectorAll(".ph").forEach(f=>f.onclick=()=>{gi=+f.dataset.k;openLb();});
+}
+const lb=document.getElementById("lb");
+function openLb(){lb.classList.add("open");document.body.style.overflow="hidden";draw();}
+function draw(){document.getElementById("lbI").src=norm(P.gallery[gi]);document.getElementById("lbC").textContent=`${P.name} — ${gi+1} / ${P.gallery.length}`;}
+document.getElementById("lbX").onclick=()=>{lb.classList.remove("open");document.body.style.overflow="";};
+document.getElementById("lbP").onclick=()=>{gi=(gi-1+P.gallery.length)%P.gallery.length;draw();};
+document.getElementById("lbN").onclick=()=>{gi=(gi+1)%P.gallery.length;draw();};
+lb.onclick=e=>{if(e.target===lb)document.getElementById("lbX").onclick();};
+addEventListener("keydown",e=>{if(!lb.classList.contains("open"))return;
+ if(e.key==="Escape")document.getElementById("lbX").onclick();
+ if(e.key==="ArrowLeft")document.getElementById("lbP").onclick();
+ if(e.key==="ArrowRight")document.getElementById("lbN").onclick();});
+load();
+</script>
+</body>
+</html>
