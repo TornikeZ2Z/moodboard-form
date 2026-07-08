@@ -7,8 +7,8 @@ const CONFIG = {
   WEB3FORMS_KEY: "YOUR_WEB3FORMS_ACCESS_KEY_HERE",
 
   // 2) Where the client's answers are sent (shown in the e-mail subject)
-  DESIGNER_NAME: "Mariam",
-  BRAND_NAME: "MARIAM",
+  DESIGNER_NAME: "Espacio Studio",
+  BRAND_NAME: "ESPACIO",
 
   // 3) Default language: "ge" | "en" | "ru"
   DEFAULT_LANG: "ge",
