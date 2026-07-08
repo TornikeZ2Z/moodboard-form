@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interior Design Questionnaire</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Georgian:wght@400;500;600&family=Noto+Sans+Georgian:wght@300;400;500;600&family=Noto+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">M</div>
+      <div class="brand-text"><span id="brandName">MARIAM</span><small id="brandSub"></small></div>
+    </div>
+    <div class="lang-switch" id="langSwitch">
+      <button data-lang="ge">ქარ</button>
+      <button data-lang="en">EN</button>
+      <button data-lang="ru">РУ</button>
+    </div>
+  </header>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-steps" id="progressSteps"></div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <main id="stage"></main>
+
+  <footer class="navbar" id="navbar">
+    <button class="btn ghost" id="btnBack"></button>
+    <div class="nav-hint" id="navHint"></div>
+    <button class="btn primary" id="btnNext"></button>
+  </footer>
+</div>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" id="lbClose">&times;</button>
+  <button class="lb-prev" id="lbPrev">&#8249;</button>
+  <img id="lbImg" src="" alt="">
+  <button class="lb-next" id="lbNext">&#8250;</button>
+  <div class="lb-caption" id="lbCaption"></div>
+</div>
+
+<script src="config.js"></script>
+<script src="i18n.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
