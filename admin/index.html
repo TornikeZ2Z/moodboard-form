@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin — Espacio Studio</title>
 <meta name="robots" content="noindex">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Hanken+Grotesk:wght@300;400;500;600&family=Allura&family=Noto+Sans+Georgian:wght@400;500;600&display=swap" rel="stylesheet">
@@ -127,6 +128,13 @@ td .mini{color:var(--muted);font-size:11.5px}
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--wash);border-top-color:var(--indigo);border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px}
 @keyframes sp{to{transform:rotate(360deg)}}
 .empty{padding:60px 20px;text-align:center;color:var(--muted)}
+.dropzone{display:block;border:2px dashed var(--line-2);border-radius:4px;padding:22px;text-align:center;cursor:pointer;margin-top:14px;transition:.2s;background:#fff}
+.dropzone b{display:block;font-family:var(--arch);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--indigo-deep)}
+.dropzone span{display:block;font-size:12px;color:var(--muted);margin-top:5px}
+.dropzone.over,.dropzone:hover{border-color:var(--indigo);background:var(--wash)}
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--ink);color:#fff;font-family:var(--arch);font-size:12px;letter-spacing:.06em;padding:12px 22px;border-radius:30px;opacity:0;pointer-events:none;transition:.3s;z-index:200}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.bad{background:var(--bad)}
 </style>
 </head>
 <body>
@@ -148,6 +156,6 @@ td .mini{color:var(--muted);font-size:11.5px}
   </div>
 </div>
 <script src="../questionnaire/config.js?v=6"></script>
-<script src="admin.js?v=1"></script>
+<script src="admin.js?v=2"></script>
 </body>
 </html>

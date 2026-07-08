@@ -86,6 +86,13 @@ function isCore(scope, q) {
   return (scope.kind==="section" && CORE_DRIVERS.includes(q.id)) || SPECIAL_TYPES.includes(q.type);
 }
 
+function toast(msg, bad) {
+  let t = document.querySelector("#toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; document.body.appendChild(t); }
+  t.textContent = msg; t.className = bad ? "bad show" : "show";
+  clearTimeout(t._h); t._h = setTimeout(() => t.className = t.className.replace("show",""), 3200);
+}
+
 /* ---------- render: login ---------- */
 function renderLogin() {
   $("#tabs").classList.add("hidden"); $("#userbox").classList.add("hidden"); $("#savebar").classList.add("hidden");
@@ -127,8 +134,8 @@ function renderQuestions() {
         <span class="cnt">${qList(sc).length} questions</span>
         <button class="btn ghost sm" data-act="add" data-scope="${sc.key}">+ Add question</button>
       </div>
-      ${rows}
       <div class="editor hidden" data-addbox="${sc.key}"></div>
+      ${rows}
     </div>`;
   }).join("");
   $("#main").innerHTML = `<div class="wrap">
@@ -193,12 +200,13 @@ function editorHtml(sc, q) {
     <div class="row-actions"><button class="btn sm" data-act="closeed">Done</button></div>
   </div>`;
 }
-function reopenEditor() {
+function reopenEditor(scroll) {
   const { scope, qid } = OPEN_ED;
   const sc = scopes().find(s => s.key === scope); if (!sc) return;
   const q = qList(sc).find(x => x.id === qid); if (!q) return;
   const row = document.querySelector(`.q-row[data-scope="${scope}"][data-qi="${qList(sc).indexOf(q)}"]`);
-  if (row) row.insertAdjacentHTML("afterend", editorHtml(sc, q));
+  if (row) { row.insertAdjacentHTML("afterend", editorHtml(sc, q));
+    if (scroll) row.nextElementSibling.scrollIntoView({ behavior:"smooth", block:"center" }); }
 }
 
 /* ---------- add question ---------- */
@@ -347,12 +355,20 @@ document.addEventListener("click", async e => {
   else if (act === "del" && q && !isCore(sc, q)) { if (confirm(`Delete “${tr(q.label,"en")}”? Existing answers keep their data.`)) { qList(sc).splice(qi,1); OPEN_ED=null; renderQuestions(); } }
   else if (act === "edit" && q) { OPEN_ED = (OPEN_ED && OPEN_ED.qid === q.id) ? null : { scope: scKey, qid: q.id }; renderQuestions(); }
   else if (act === "closeed") { OPEN_ED = null; renderQuestions(); }
-  else if (act === "add" && sc) { const box = document.querySelector(`[data-addbox="${scKey}"]`); box.classList.toggle("hidden"); if (!box.classList.contains("hidden")) box.innerHTML = addBoxHtml(sc); }
+  else if (act === "add" && sc) {
+    const box = document.querySelector(`[data-addbox="${scKey}"]`);
+    box.classList.toggle("hidden");
+    if (!box.classList.contains("hidden")) {
+      box.innerHTML = addBoxHtml(sc);
+      box.scrollIntoView({ behavior:"smooth", block:"center" });
+      setTimeout(() => box.querySelector('[data-add="en"]')?.focus(), 250);
+    }
+  }
   else if (act === "addcancel") { document.querySelector(`[data-addbox="${scKey}"]`).classList.add("hidden"); }
   else if (act === "addconfirm" && sc) {
     const box = document.querySelector(`[data-addbox="${scKey}"]`);
     addQuestion(sc, box.querySelector('[data-add="type"]').value, box.querySelector('[data-add="en"]').value.trim(), box.querySelector('[data-add="ge"]').value.trim());
-    renderQuestions();
+    renderQuestions(); reopenEditor(true); OPEN_ED && toast("Question added — fill in the texts, then press “Publish changes”");
   }
   else if (act === "addopt" || act === "delopt") {
     const ed = e.target.closest("[data-edq]"); if (!ed) return;
@@ -504,10 +520,15 @@ function projEditor(p) {
     <textarea data-pf="description" style="width:100%;min-height:90px;border:1px solid var(--line);border-radius:2px;padding:10px;font-family:var(--hank);font-size:13.5px">${esc(p.description||"")}</textarea>
     <label>Photos — ★ sets the cover, arrows reorder</label>
     <div style="column-count:4;column-gap:10px">${gal}</div>
-    <div class="row-actions">
-      <label class="btn ghost sm" style="cursor:pointer">⬆ Upload photos<input type="file" accept="image/*" multiple data-pact="gupload" data-slug="${esc(p.slug)}" style="display:none"></label>
-      <button class="btn sm" data-pact="psave" data-slug="${esc(p.slug)}">Save project</button>
+    <label class="dropzone" data-drop="${esc(p.slug)}">
+      <input type="file" accept="image/*" multiple data-pact="gupload" data-slug="${esc(p.slug)}" style="display:none">
+      <b>⬆ Add photos</b>
+      <span>Click here or drag & drop images — they upload, save and appear in the gallery automatically</span>
       <span class="hint" id="pstate-${esc(p.slug)}"></span>
+    </label>
+    <div class="row-actions">
+      <button class="btn sm" data-pact="psave" data-slug="${esc(p.slug)}">Save text changes</button>
+      <span class="hint">Photos save themselves; this button saves the text fields above.</span>
     </div>
   </div>`;
 }
@@ -515,17 +536,21 @@ function projEditor(p) {
 const findProj = slug => PROJ.find(x => x.slug === slug);
 
 async function uploadPhotos(p, files) {
+  const imgs = files.filter(f => /^image\//.test(f.type));
+  if (!imgs.length) { toast("Those files are not images", true); return; }
   const st = $("#pstate-" + p.slug);
-  let done = 0;
-  for (const f of files) {
-    st.innerHTML = `<span class="spin"></span> Uploading ${++done}/${files.length}…`;
-    const small = await shrinkImage(f, 1600, .84);
-    const path = `${p.slug}/${Date.now().toString(36)}_${f.name.replace(/[^a-z0-9.]+/gi,"-").toLowerCase()}`;
+  let ok = 0;
+  for (let i = 0; i < imgs.length; i++) {
+    if (st) st.innerHTML = `<span class="spin"></span> Uploading photo ${i+1} of ${imgs.length}…`;
+    const small = await shrinkImage(imgs[i], 1600, .84);
+    const path = `${p.slug}/${Date.now().toString(36)}_${imgs[i].name.replace(/[^a-z0-9.]+/gi,"-").toLowerCase()}`;
     const r = await api(`/storage/v1/object/project-photos/${path}`, { method:"POST",
       headers:{ "Content-Type":"image/jpeg", "x-upsert":"true" }, body: small });
-    if (r.ok) p.gallery.push(pubUrl(path));
+    if (r.ok) { p.gallery.push(pubUrl(path)); ok++; }
   }
-  st.textContent = "";
+  if (!p.cover && p.gallery.length) p.cover = p.gallery[0];
+  if (ok && p.id) { try { const saved = await saveProject(p, false); Object.assign(p, saved); } catch(e) {} }
+  toast(ok === imgs.length ? `✓ ${ok} photo${ok>1?"s":""} added and saved` : `Only ${ok} of ${imgs.length} uploaded`, ok !== imgs.length);
 }
 function shrinkImage(file, max, q) {
   return new Promise(res => {
@@ -545,6 +570,20 @@ document.addEventListener("change", async e => {
   const up = e.target.closest('[data-pact="gupload"]'); if (!up) return;
   const p = findProj(up.dataset.slug);
   await uploadPhotos(p, [...e.target.files]);
+  renderProjects();
+});
+document.addEventListener("dragover", e => {
+  const dz = e.target.closest("[data-drop]"); if (!dz) return;
+  e.preventDefault(); dz.classList.add("over");
+});
+document.addEventListener("dragleave", e => {
+  const dz = e.target.closest("[data-drop]"); if (dz) dz.classList.remove("over");
+});
+document.addEventListener("drop", async e => {
+  const dz = e.target.closest("[data-drop]"); if (!dz) return;
+  e.preventDefault(); dz.classList.remove("over");
+  const p = findProj(dz.dataset.drop);
+  await uploadPhotos(p, [...e.dataTransfer.files]);
   renderProjects();
 });
 
