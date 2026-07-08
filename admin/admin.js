@@ -203,8 +203,8 @@ function qRow(sc, q, qi) {
 
 /* ---------- editor ---------- */
 function editorHtml(sc, q) {
-  const kinds = ["text","textarea","num","yn","radio","check"];
-  const special = SPECIAL_TYPES.includes(q.type) || ["imgradio","imgcheck","tel","email"].includes(q.type);
+  const kinds = ["text","textarea","num","yn","radio","check","imgradio","imgcheck"];
+  const special = SPECIAL_TYPES.includes(q.type) || ["tel","email"].includes(q.type);
   const labelInputs = ["ge","en","ru"].map(l => `
     <div><label>${langName[l]}</label>
     <input data-ed="label" data-lang="${l}" value="${esc(tr(q.label,l))}"></div>`).join("");
@@ -275,9 +275,10 @@ function addBoxHtml(sc) {
   return `<label>New question — internal id will be created automatically</label>
     <div class="grid3">
       <div><label>Type</label><select data-add="type">
-        <option value="text">Text</option><option value="textarea">Long text</option>
+        <option value="text">Short text</option><option value="textarea">Long text</option>
         <option value="num">Number</option><option value="yn">Yes / No</option>
-        <option value="radio">Single choice</option><option value="check">Multi choice</option></select></div>
+        <option value="radio">Choose one</option><option value="check">Choose several</option>
+        <option value="imgradio">Choose one · photos</option><option value="imgcheck">Choose several · photos</option></select></div>
       <div><label>Question · English</label><input data-add="en" placeholder="e.g. What is your budget?"></div>
       <div><label>Question · ქართული</label><input data-add="ge" placeholder="e.g. რა ბიუჯეტი გაქვთ?"></div>
     </div>
@@ -292,7 +293,8 @@ function addQuestion(sc, type, en, ge) {
   const labelKey = "q_" + id;
   setTr(labelKey,"en",en||"New question"); setTr(labelKey,"ge",ge||en||"ახალი კითხვა"); setTr(labelKey,"ru",en||"Новый вопрос");
   const q = { id, type, label: labelKey, req:true, visible:true };
-  if (["radio","check"].includes(type)) {
+  if (["imgradio","imgcheck"].includes(type)) q.cols = 3;
+  if (["radio","check","imgradio","imgcheck"].includes(type)) {
     q.options = [1,2].map(n => { const k=`o_${id}_${n}`; setTr(k,"en","Option "+n); setTr(k,"ge","ვარიანტი "+n); setTr(k,"ru","Вариант "+n);
       return { v:"opt"+n, label:k }; });
   }
