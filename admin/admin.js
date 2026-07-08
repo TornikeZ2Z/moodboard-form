@@ -208,18 +208,20 @@ function editorHtml(sc, q) {
   const labelInputs = ["ge","en","ru"].map(l => `
     <div><label>${langName[l]}</label>
     <input data-ed="label" data-lang="${l}" value="${esc(tr(q.label,l))}"></div>`).join("");
+  const imgSrcOf = n => /^https?:\/\//.test(n) ? n : `../questionnaire/assets/opts/${n}.jpg`;
   const thumb = o => o.img
-    ? `<img class="opt-thumb" src="../questionnaire/assets/opts/${esc(o.img)}.jpg" onerror="this.style.visibility='hidden'">`
+    ? `<img class="opt-thumb" src="${esc(imgSrcOf(o.img))}" onerror="this.style.visibility='hidden'">`
     : `<span class="opt-thumb none">—</span>`;
   const opts = (q.options||[]).map((o,oi) => `
     <div class="opt-row" data-oi="${oi}">
       ${thumb(o)}
       <input value="${esc(o.v)}" disabled title="internal value — used in rules">
       ${["ge","en","ru"].map(l=>`<input data-ed="optlabel" data-oi="${oi}" data-lang="${l}" placeholder="${langName[l]}" value="${esc(tr(o.label,l))}">`).join("")}
-      <input data-ed="optimg" data-oi="${oi}" placeholder="photo file name" value="${esc(o.img||"")}">
+      <input data-ed="optimg" data-oi="${oi}" placeholder="photo…" value="${esc(o.img||"")}">
+      <button class="upbtn" data-act="optupload" data-oi="${oi}" title="Upload a photo for this option">📷 Upload</button>
       <button class="del" data-act="delopt" data-oi="${oi}" title="Remove option">✕</button>
     </div>`).join("");
-  const optHead = `<div class="opt-head"><span></span><span>value</span><span>ქართული</span><span>English</span><span>Русский</span><span>photo file</span><span></span></div>`;
+  const optHead = `<div class="opt-head"><span></span><span>value</span><span>ქართული</span><span>English</span><span>Русский</span><span>photo</span><span></span><span></span></div>`;
   const choice = ["radio","check","imgradio","imgcheck","swatch"].includes(q.type);
 
   const depTargets = qList(sc).filter(x => x.id !== q.id && x.options)
@@ -359,7 +361,7 @@ function valueVisuals(qid, data) {
   if (qid === "s_style") return vals.map(x => `<img src="../questionnaire/assets/styles/${x==="contemporary"||x==="midcentury" ? x+"_1" : x+"_1"}.jpg" title="${esc(x)}">`).join("");
   if (!q || !q.options) return "";
   return vals.map(x => { const o = q.options.find(o => o.v === x);
-    return o && o.img ? `<img src="../questionnaire/assets/opts/${o.img}.jpg" title="${esc(x)}">` : ""; }).join("");
+    return o && o.img ? `<img src="${/^https?:\/\//.test(o.img)?o.img:`../questionnaire/assets/opts/${o.img}.jpg`}" title="${esc(x)}">` : ""; }).join("");
 }
 
 function subSections(s) {
@@ -464,6 +466,26 @@ document.addEventListener("click", async e => {
     addQuestion(sc, box.querySelector('[data-add="type"]').value, box.querySelector('[data-add="en"]').value.trim(), box.querySelector('[data-add="ge"]').value.trim());
     renderQuestions(); reopenEditor(true); OPEN_ED && toast("Question added — fill in the texts, then press “Publish changes”");
   }
+  else if (act === "optupload") {
+    const ed = e.target.closest("[data-edq]"); if (!ed) return;
+    const esc3 = scopes().find(s => s.key === ed.dataset.edscope);
+    const eq = qList(esc3).find(x => x.id === ed.dataset.edq);
+    const oi = +el.dataset.oi;
+    const fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*";
+    fi.onchange = async () => {
+      const f = fi.files[0]; if (!f) return;
+      toast("Uploading photo…");
+      const small = await shrinkImage(f, 1200, .85);
+      const path = `question-options/${eq.id}/${Date.now().toString(36)}_${f.name.replace(/[^a-z0-9.]+/gi,"-").toLowerCase()}`;
+      const r = await api(`/storage/v1/object/project-photos/${path}`, { method:"POST",
+        headers:{ "Content-Type":"image/jpeg", "x-upsert":"true" }, body: small });
+      if (r.ok) { eq.options[oi].img = pubUrl(path);
+        OPEN_ED = { scope: ed.dataset.edscope, qid: eq.id }; renderQuestions(); updateSavebar();
+        toast("✓ Photo uploaded — press “Publish changes” to make it live"); }
+      else toast("Upload failed (" + r.status + ")", true);
+    };
+    fi.click();
+  }
   else if (act === "addopt" || act === "delopt") {
     const ed = e.target.closest("[data-edq]"); if (!ed) return;
     const esc2 = scopes().find(s => s.key === ed.dataset.edscope);
@@ -495,7 +517,7 @@ document.addEventListener("input", e => {
   else if (kind === "optlabel") setTr(q.options[+ed.dataset.oi].label, ed.dataset.lang, ed.value);
   else if (kind === "optimg") { const v = ed.value.trim(); if (v) q.options[+ed.dataset.oi].img = v; else delete q.options[+ed.dataset.oi].img;
     const row = ed.closest(".opt-row"); const t = row && row.querySelector(".opt-thumb");
-    if (t) { if (v) { t.outerHTML = `<img class="opt-thumb" src="../questionnaire/assets/opts/${v}.jpg" onerror="this.style.visibility='hidden'">`; } } }
+    if (t) { if (v) { const s=/^https?:\/\//.test(v)?v:`../questionnaire/assets/opts/${v}.jpg`; t.outerHTML = `<img class="opt-thumb" src="${s}" onerror="this.style.visibility='hidden'">`; } } }
   else if (kind === "type") q.type = ed.value;
   else if (kind === "req") q.req = ed.value === "1";
   else if (kind === "vis") q.visible = ed.value === "1";

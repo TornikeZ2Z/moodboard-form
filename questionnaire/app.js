@@ -12,6 +12,7 @@ const T = (k, n) => {
   return v;
 };
 const OPT = name => `${CONFIG.ASSETS}/opts/${name}.jpg`;
+const IMGX = name => /^https?:\/\//.test(name) ? name : OPT(name);   // option images may be uploaded URLs
 const BOARD = name => `${CONFIG.ASSETS}/styles/${name}.jpg`;
 const PAL_IMG = i => `${CONFIG.ASSETS}/palettes/pal_${i}.png`;
 
@@ -424,8 +425,8 @@ function qHtml(q, d) {
       const cur = multi ? (Array.isArray(v)?v:[]) : v;
       const cards = q.o.map(o => {
         const on = multi ? cur.includes(o.v) : cur === o.v;
-        const img = o.img ? `<img src="${OPT(o.img)}" loading="lazy" alt="">
-          <button class="zoom" data-zoom='${JSON.stringify([OPT(o.img)])}' data-cap="${esc(labelOf(o))}">⌕</button>` :
+        const img = o.img ? `<img src="${IMGX(o.img)}" loading="lazy" alt="">
+          <button class="zoom" data-zoom='${JSON.stringify([IMGX(o.img)])}' data-cap="${esc(labelOf(o))}">⌕</button>` :
           `<div style="aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;font-size:30px;color:var(--line)">✦</div>`;
         return `<div class="card ${q.tall?"tall":""} ${on?"on":""}" data-pick="${q.id}" data-v="${esc(o.v)}" data-multi="${multi?1:0}" data-max="${q.max||0}">
           ${img}<div class="cap">${esc(labelOf(o))}</div><div class="tick">✓</div></div>`;
@@ -464,7 +465,7 @@ function qHtml(q, d) {
     case "swatch": {
       body = `<div class="swatches">` + q.o.map(o => `
         <div class="swatch ${v===o.v?"on":""}" data-pick="${q.id}" data-v="${o.v}" data-multi="0">
-          <img src="${OPT(o.img)}" loading="lazy" alt=""><div class="cap">${esc(labelOf(o))}</div></div>`).join("") + `</div>`;
+          <img src="${IMGX(o.img)}" loading="lazy" alt=""><div class="cap">${esc(labelOf(o))}</div></div>`).join("") + `</div>`;
       break; }
     case "tone": {
       body = `<div class="cards c3">` + q.o.map(o => `
