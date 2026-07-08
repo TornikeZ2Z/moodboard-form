@@ -13,7 +13,11 @@ const CONFIG = {
   // 3) Default language: "ge" | "en" | "ru"
   DEFAULT_LANG: "ge",
 
-  // 4) Image locations (relative to index.html). To replace any picture,
+  // 4) Supabase (publishable key is safe to embed)
+  SUPABASE_URL: "https://coxsphbxxmotohicnosf.supabase.co",
+  SUPABASE_KEY: "sb_publishable_dkgH0mhJpxnR32-ulcw5NA_ek9w17aU",
+
+  // 5) Image locations (relative to index.html). To replace any picture,
   //    just drop a new file with the same name into assets/…
   ASSETS: "assets"
 };

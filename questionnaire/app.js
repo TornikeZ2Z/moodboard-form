@@ -45,6 +45,102 @@ const STYLES = [
 const METAL_IMG = { black:"fin_mblack", gold:"fin_bgold", silver:"fin_nickel", rose:"fin_brose" };
 const FINISHES = ["chrome","nickel","mblack","gunmetal","mwhite","champagne","pgold","bgold","prose","brose"];
 
+
+/* ---------- remote schema layer (Supabase) ---------- */
+const REMOTE = { doc:null };
+const SB = (path, opt={}) => fetch(CONFIG.SUPABASE_URL + path, Object.assign({
+  headers: Object.assign({ apikey: CONFIG.SUPABASE_KEY, Authorization: "Bearer " + CONFIG.SUPABASE_KEY,
+    "Content-Type": "application/json" }, opt.headers||{}) }, opt));
+
+function evalDep(dep, d, prefix) {
+  let qid = dep.q;
+  if (prefix && qid.startsWith(prefix.tpl)) qid = prefix.real + qid.slice(prefix.tpl.length);
+  const val = d[qid];
+  if (dep.op === "eq") return val === dep.v;
+  if (dep.op === "in") return Array.isArray(dep.v) && dep.v.includes(val);
+  if (dep.op === "gt") return num2(val) > dep.v;
+  if (dep.op === "truthy") return !!val && (!Array.isArray(val) || val.length > 0);
+  return true;
+}
+
+function qFromDoc(dq, prefix) {
+  const id = prefix ? prefix.real + dq.id : dq.id;
+  const q = { id, t: dq.type, l: dq.label };
+  if (dq.note) q.n = dq.note;
+  q.req = dq.req !== false;
+  if (dq.req === false) q.req = false;
+  if (dq.max) q.max = dq.max;
+  if (dq.type === "num") { q.min = dq.min ?? 0; q.max = dq.maxN ?? 10; }
+  if (dq.cols) q.cols = dq.cols;
+  if (dq.tall) q.tall = true;
+  if (dq.other) q.other = dq.other;
+  if (dq.none) q.none = dq.none;
+  if (dq.ph) q.ph = dq.ph;
+  if (dq.explain) q.explain = dq.explain;
+  if (dq.options) q.o = dq.options.map(o => { const r = { v:o.v, l:o.label }; if (o.img) r.img = o.img; if (o.ln !== undefined) r.ln = o.ln; if (o.c) r.c = o.c; return r; });
+  if (dq.exact === "bathCount") q.exactFn = dd => Math.min(num2(dd[(REMOTE.doc?.settings?.bathCountDriver)||"l_bathCount"]) || 1, 7);
+  if (dq.dep) q.show = dd => evalDep(dq.dep, dd, prefix ? { tpl: prefix.tpl, real: prefix.real } : null);
+  return q;
+}
+
+function buildStepsFromDoc(doc, d) {
+  const steps = [{ id:"welcome", type:"welcome" }];
+  const S = doc.settings || {};
+  for (const sec of doc.sections) {
+    if (sec.visible === false) continue;
+    steps.push({ id: sec.id, icon: sec.icon, title: sec.title, sub: sec.sub, num: sec.num,
+      qs: sec.questions.filter(q => q.visible !== false).map(q => qFromDoc(q)) });
+  }
+  // bedrooms
+  const bt = doc.templates && doc.templates.bedroom;
+  if (bt && bt.visible !== false) {
+    const nBed = Math.min(Math.max(num2(d[S.bedroomsDriver||"l_bedrooms"]), 1), S.maxBedrooms||8);
+    for (let i = 1; i <= nBed; i++)
+      steps.push({ id:"b"+i, icon:bt.icon, titleRaw:()=>T(bt.titleKey, i), sub:bt.sub, num:bt.num,
+        chip:()=>T("st_b")+" "+i,
+        qs: bt.questions.filter(q=>q.visible!==false).map(q => qFromDoc(q, { tpl:"b_", real:`b${i}_` })) });
+  }
+  // bathrooms
+  const wt = doc.templates && doc.templates.bathroom;
+  if (wt && wt.visible !== false) {
+    const types = Array.isArray(d[S.bathTypesDriver||"l_bathTypes"]) ? d[S.bathTypesDriver||"l_bathTypes"] : [];
+    const list = types.length ? types : ["shared"];
+    const skip = (doc.templates.bathroomGuestSkip)||[];
+    list.forEach((tv, idx) => {
+      const opt = bathTypeOptions(d).find(o => o.v === tv);
+      const title = () => opt ? (opt.ln ? T(opt.l, opt.ln) : T(opt.l)) : T("st_w");
+      const qs = wt.questions.filter(q => q.visible !== false && !(tv === "guestwc" && skip.includes(q.id)))
+        .map(q => qFromDoc(q, { tpl:"w_", real:`w${idx+1}_` }));
+      steps.push({ id:"w"+(idx+1), icon:wt.icon, titleRaw:title, sub:wt.sub, num:wt.num, chip:title, qs });
+    });
+  }
+  // move kitchen after baths if doc keeps original order (k stays where listed); review+final:
+  steps.push({ id:"r", type:"review", icon:"st_r", title:"sec_r_t", sub:"sec_r_s", num:"09" });
+  steps.push({ id:"final", type:"final" });
+  // reorder: ensure k section (if in doc.sections) sits after bathrooms
+  const ki = steps.findIndex(s => s.id === "k");
+  if (ki > 0) { const [k] = steps.splice(ki,1); steps.splice(steps.findIndex(s=>s.id==="r"), 0, k); }
+  return steps;
+}
+
+function applyDoc(doc) {
+  REMOTE.doc = doc;
+  if (doc.i18n) for (const lng of ["ge","en","ru"]) if (doc.i18n[lng]) I18N[lng] = doc.i18n[lng];
+}
+
+async function loadRemoteSchema() {
+  try { const c = localStorage.getItem("espacio_schema_v1"); if (c) applyDoc(JSON.parse(c)); } catch(e) {}
+  try {
+    const r = await SB("/rest/v1/form_schema?published=eq.true&order=id.desc&limit=1&select=doc");
+    if (r.ok) { const rows = await r.json();
+      if (rows.length) { const doc = rows[0].doc;
+        const cur = REMOTE.doc && JSON.stringify(REMOTE.doc);
+        if (JSON.stringify(doc) !== cur) { applyDoc(doc);
+          try { localStorage.setItem("espacio_schema_v1", JSON.stringify(doc)); } catch(e) {}
+          renderStepPreserveScroll(); } } }
+  } catch(e) { /* offline / not set up yet — built-in schema continues to work */ }
+}
+
 /* ---------- state ---------- */
 const SAVE_KEY = "mariam_form_v1";
 let state = { lang: CONFIG.DEFAULT_LANG, step: 0, done: false, data: {} };
@@ -136,6 +232,11 @@ function bathTypeOptions(d) {
 }
 
 function buildSteps(d) {
+  if (REMOTE.doc) { try { return buildStepsFromDoc(REMOTE.doc, d); } catch(e) { console.warn("doc schema failed, using built-in", e); } }
+  return buildStepsBuiltin(d);
+}
+
+function buildStepsBuiltin(d) {
   const steps = [];
   steps.push({ id:"welcome", type:"welcome" });
 
@@ -559,9 +660,17 @@ function answersText() {
 
 let sendState = "idle";
 async function submitAnswers() {
-  const keyOk = CONFIG.WEB3FORMS_KEY && !/YOUR_WEB3FORMS/.test(CONFIG.WEB3FORMS_KEY);
-  if (!keyOk) { sendState = "fail"; return; }
   sendState = "sending";
+  let dbOk = false;
+  try {
+    const r = await SB("/rest/v1/submissions", { method:"POST",
+      headers:{ Prefer:"return=minimal" },
+      body: JSON.stringify({ lang: state.lang, client_name: D.g_name||"", client_email: D.g_email||"",
+        client_phone: D.g_phone||"", data: D }) });
+    dbOk = r.status === 201;
+  } catch(e) {}
+  const keyOk = CONFIG.WEB3FORMS_KEY && !/YOUR_WEB3FORMS/.test(CONFIG.WEB3FORMS_KEY);
+  if (!keyOk) { sendState = dbOk ? "ok" : "fail"; return; }
   try {
     const res = await fetch("https://api.web3forms.com/submit", {
       method:"POST", headers:{ "Content-Type":"application/json", Accept:"application/json" },
@@ -575,8 +684,8 @@ async function submitAnswers() {
       })
     });
     const j = await res.json();
-    sendState = j.success ? "ok" : "fail";
-  } catch (e) { sendState = "fail"; }
+    sendState = (j.success || dbOk) ? "ok" : "fail";
+  } catch (e) { sendState = dbOk ? "ok" : "fail"; }
 }
 
 function renderFinal() {
@@ -733,3 +842,4 @@ document.querySelectorAll("#langSwitch button").forEach(b => b.onclick = () => s
 /* ---------- init ---------- */
 $("#brandName").textContent = CONFIG.BRAND_NAME;
 setLang(state.lang);
+loadRemoteSchema();
