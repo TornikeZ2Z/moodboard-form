@@ -640,7 +640,7 @@ stage.addEventListener("click", e => {
     let val = (D[q.id] ?? q.min) + parseInt(numBtn.dataset.d,10);
     val = Math.min(Math.max(val, q.min), q.max);
     D[q.id] = val; save();
-    $("#nv_" + q.id).textContent = val;
+    renderStepPreserveScroll();   // re-render so number-driven conditionals appear
     return;
   }
   const pick = e.target.closest("[data-pick]");
@@ -731,5 +731,4 @@ function setLang(l) {
 document.querySelectorAll("#langSwitch button").forEach(b => b.onclick = () => setLang(b.dataset.lang));
 
 /* ---------- init ---------- */
-$("#brandName").textContent = CONFIG.BRAND_NAME;
-setLang(state.lang);
+$("#brandName").textConten
