@@ -215,13 +215,13 @@ function editorHtml(sc, q) {
   const opts = (q.options||[]).map((o,oi) => `
     <div class="opt-row" data-oi="${oi}">
       ${thumb(o)}
-      <input value="${esc(o.v)}" disabled title="internal value — used in rules">
+      <input class="adv" value="${esc(o.v)}" disabled title="internal value — used in rules">
       ${["ge","en","ru"].map(l=>`<input data-ed="optlabel" data-oi="${oi}" data-lang="${l}" placeholder="${langName[l]}" value="${esc(tr(o.label,l))}">`).join("")}
-      <input data-ed="optimg" data-oi="${oi}" placeholder="photo…" value="${esc(o.img||"")}">
+      <input class="adv" data-ed="optimg" data-oi="${oi}" placeholder="photo…" value="${esc(o.img||"")}">
       <button class="upbtn" data-act="optupload" data-oi="${oi}" title="Upload a photo for this option">📷 Upload</button>
       <button class="del" data-act="delopt" data-oi="${oi}" title="Remove option">✕</button>
     </div>`).join("");
-  const optHead = `<div class="opt-head"><span></span><span>value</span><span>ქართული</span><span>English</span><span>Русский</span><span>photo</span><span></span><span></span></div>`;
+  const optHead = `<div class="opt-head"><span></span><span class="adv">value</span><span>ქართული</span><span>English</span><span>Русский</span><span class="adv">photo</span><span></span><span></span></div>`;
   const choice = ["radio","check","imgradio","imgcheck","swatch"].includes(q.type);
 
   const depTargets = qList(sc).filter(x => x.id !== q.id && x.options)
@@ -245,7 +245,8 @@ function editorHtml(sc, q) {
         <div><label>Required</label><select data-ed="req"><option value="1" ${q.req!==false?"selected":""}>Yes — must be answered</option><option value="0" ${q.req===false?"selected":""}>No — optional</option></select></div>
         <div><label>Shown on site</label><select data-ed="vis"><option value="1" ${q.visible!==false?"selected":""}>Yes</option><option value="0" ${q.visible===false?"selected":""}>Hidden</option></select></div>
       </div></div>
-    ${choice ? `<div class="ed-block"><h4>3 · Answer options</h4>${optHead}${opts}
+    ${choice ? `<div class="ed-block"><h4>3 · Answer options
+        <button class="advtog" data-act="advtoggle" title="Show technical fields">⚙</button></h4>${optHead}${opts}
       <button class="btn ghost sm" data-act="addopt">+ Add option</button></div>` : ""}
     <div class="ed-block"><h4>${choice?"4":"3"} · When is this question shown?</h4>
       <div class="dep-grid">
@@ -466,6 +467,7 @@ document.addEventListener("click", async e => {
     addQuestion(sc, box.querySelector('[data-add="type"]').value, box.querySelector('[data-add="en"]').value.trim(), box.querySelector('[data-add="ge"]').value.trim());
     renderQuestions(); reopenEditor(true); OPEN_ED && toast("Question added — fill in the texts, then press “Publish changes”");
   }
+  else if (act === "advtoggle") { e.target.closest(".editor").classList.toggle("showadv"); }
   else if (act === "optupload") {
     const ed = e.target.closest("[data-edq]"); if (!ed) return;
     const esc3 = scopes().find(s => s.key === ed.dataset.edscope);
