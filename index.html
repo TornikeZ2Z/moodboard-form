@@ -79,6 +79,9 @@ nav.links a.cta::after{background:var(--indigo);width:100%;opacity:.35}
 nav.links a.cta:hover::after{opacity:1}
 .menu-btn{display:none;flex-direction:column;gap:5px;background:none;border:0;cursor:pointer;padding:6px}
 .menu-btn span{width:24px;height:2px;background:var(--ink);transition:.3s var(--ease)}
+.lang-pick{display:inline-flex;border:1px solid var(--line);border-radius:20px;overflow:hidden;background:#fff}
+.lang-pick button{border:0;background:none;padding:7px 12px;font-family:"Archivo",sans-serif;font-size:.7rem;font-weight:600;letter-spacing:.06em;color:var(--muted);cursor:pointer;text-transform:uppercase}
+.lang-pick button.on{background:var(--ink);color:#fff}
 
 /* ---------- hero ---------- */
 .hero{padding:clamp(120px,17vh,180px) var(--gut) clamp(40px,7vh,72px)}
@@ -357,11 +360,12 @@ footer .copy{font-size:.74rem;color:var(--muted);letter-spacing:.02em}
 <header class="nav" id="nav">
   <a href="#top" class="brand" aria-label="Espacio Studio home">ESPACIO<span class="s">Studio</span></a>
   <nav class="links" id="links">
-    <a href="#work">Work</a>
-    <a href="#studio">Studio</a>
-    <a href="#team">Team</a>
-    <a href="#contact">Contact</a>
-    <a href="questionnaire/" class="cta">Start a project</a>
+    <a href="#work" data-l="nav_work">Work</a>
+    <a href="#studio" data-l="nav_studio">Studio</a>
+    <a href="#team" data-l="nav_team">Team</a>
+    <a href="#contact" data-l="nav_contact">Contact</a>
+    <a href="questionnaire/" class="cta" data-l="nav_cta">Start a project</a>
+    <span class="lang-pick" id="langPick"><button data-lang="ge">ქარ</button><button data-lang="en">EN</button><button data-lang="ru">РУ</button></span>
   </nav>
   <button class="menu-btn" id="menuBtn" aria-label="Toggle menu"><span></span><span></span><span></span></button>
 </header>
@@ -370,15 +374,15 @@ footer .copy{font-size:.74rem;color:var(--muted);letter-spacing:.02em}
 <section class="hero" id="top">
   <div class="hero-grid">
     <div class="hero-copy reveal">
-      <div class="hero-meta"><span class="tick"></span>Architecture &amp; Interior Design — Est. Tbilisi</div>
+      <div class="hero-meta"><span class="tick"></span><span data-l="hero_meta">Architecture &amp; Interior Design — Est. Tbilisi</span></div>
       <div class="wordmark">
         <div class="espacio">Espacio</div>
         <div class="script">Studio</div>
       </div>
-      <p class="hero-lede">We design <b>spaces people want to stay in</b> — homes, shops, cafés and workplaces across Georgia, from first sketch to the last detail on site.</p>
+      <p class="hero-lede" data-l="hero_lede">We design <b>spaces people want to stay in</b> — homes, shops, cafés and workplaces across Georgia, from first sketch to the last detail on site.</p>
       <div class="hero-actions">
-        <a href="#work" class="btn">View the work <span class="arr">→</span></a>
-        <a href="questionnaire/" class="link-quiet">Start a project</a>
+        <a href="#work" class="btn"><span data-l="hero_btn">View the work</span> <span class="arr">→</span></a>
+        <a href="questionnaire/" class="link-quiet" data-l="nav_cta2">Start a project</a>
       </div>
     </div>
     <figure class="hero-figure reveal">
@@ -387,7 +391,7 @@ footer .copy{font-size:.74rem;color:var(--muted);letter-spacing:.02em}
       <figcaption class="hero-cap">
         <span class="n">01 —</span>
         <span class="t">Okrokana Residence</span>
-        <span class="l">Okrokana, Georgia · Ongoing</span>
+        <span class="l">Okrokana, Georgia · <span data-l="st_ongoing">Ongoing</span></span>
       </figcaption>
     </figure>
   </div>
@@ -402,13 +406,13 @@ footer .copy{font-size:.74rem;color:var(--muted);letter-spacing:.02em}
 <section class="studio" id="studio">
   <div class="wrap studio-grid">
     <div class="reveal">
-      <div class="eyebrow"><span class="tick"></span>The Studio</div>
-      <p class="studio-statement" style="margin-top:22px">Calm, character and craft — <em>designed</em> for the way you actually live.</p>
+      <div class="eyebrow"><span class="tick"></span><span data-l="studio_eyebrow">The Studio</span></div>
+      <p class="studio-statement" style="margin-top:22px" data-l="studio_statement">Calm, character and craft — <em>designed</em> for the way you actually live.</p>
     </div>
     <div class="reveal">
       <div class="studio-body">
-        <p>Espacio is a Tbilisi-based architecture and interior design practice led by two architects. We work across residential and commercial projects — private homes and apartments, retail spaces, cafés and bakeries, offices and clinics.</p>
-        <p>Every project starts with how a space will be used, then layers material, light and detail until it feels considered but never cold. We stay involved from concept and visualisation through to the finishes installed on site.</p>
+        <p data-l="studio_p1">Espacio is a Tbilisi-based architecture and interior design practice led by two architects. We work across residential and commercial projects — private homes and apartments, retail spaces, cafés and bakeries, offices and clinics.</p>
+        <p data-l="studio_p2">Every project starts with how a space will be used, then layers material, light and detail until it feels considered but never cold. We stay involved from concept and visualisation through to the finishes installed on site.</p>
       </div>
       <div class="services" id="services"></div>
     </div>
@@ -420,8 +424,8 @@ footer .copy{font-size:.74rem;color:var(--muted);letter-spacing:.02em}
   <div class="wrap">
     <div class="work-head">
       <div class="section-head reveal">
-        <div class="eyebrow"><span class="tick"></span>Selected Work</div>
-        <h2>Projects</h2>
+        <div class="eyebrow"><span class="tick"></span><span data-l="work_eyebrow">Selected Work</span></div>
+        <h2 data-l="work_h2">Projects</h2>
       </div>
       <div class="filters reveal" id="filters"></div>
     </div>
@@ -434,8 +438,8 @@ footer .copy{font-size:.74rem;color:var(--muted);letter-spacing:.02em}
 <section class="band reveal">
   <img data-img="band-praline" alt="Café Praline interior" />
   <div class="wrap band-inner">
-    <div class="eyebrow"><span class="tick"></span>Hospitality</div>
-    <blockquote>Spaces that make people <em>want</em> to linger.</blockquote>
+    <div class="eyebrow"><span class="tick"></span><span data-l="band_eyebrow">Hospitality</span></div>
+    <blockquote data-l="band_quote">Spaces that make people <em>want</em> to linger.</blockquote>
   </div>
 </section>
 
@@ -443,19 +447,19 @@ footer .copy{font-size:.74rem;color:var(--muted);letter-spacing:.02em}
 <section class="team" id="team">
   <div class="wrap">
     <div class="section-head reveal">
-      <div class="eyebrow"><span class="tick"></span>The People</div>
-      <h2>Two architects, one studio</h2>
+      <div class="eyebrow"><span class="tick"></span><span data-l="team_eyebrow">The People</span></div>
+      <h2 data-l="team_h2">Two architects, one studio</h2>
     </div>
     <div class="members">
       <article class="member reveal">
         <div class="pic"><img data-img="team-arveladze" alt="Mariam Arveladze" /></div>
         <div>
           <h3>Mariam Arveladze</h3>
-          <div class="role">Architect / Designer</div>
+          <div class="role" data-l="role">Architect / Designer</div>
           <dl>
-            <dt>Education</dt>
+            <dt data-l="dt_edu">Education</dt>
             <dd><b>Caucasus University</b> — Architecture Program<br><b>Elisava, Barcelona</b> — MA, Retail Space Design</dd>
-            <dt>Experience</dt>
+            <dt data-l="dt_exp">Experience</dt>
             <dd>Smart Capital · Anagi Development · NG Project Group · XYZ Architects · Espacio Studio</dd>
           </dl>
         </div>
@@ -464,11 +468,11 @@ footer .copy{font-size:.74rem;color:var(--muted);letter-spacing:.02em}
         <div class="pic"><img data-img="team-jangirashvili" alt="Mariam Jangirashvili" /></div>
         <div>
           <h3>Mariam Jangirashvili</h3>
-          <div class="role">Architect / Designer</div>
+          <div class="role" data-l="role">Architect / Designer</div>
           <dl>
-            <dt>Education</dt>
+            <dt data-l="dt_edu">Education</dt>
             <dd><b>Caucasus University</b> — Architecture Program</dd>
-            <dt>Experience</dt>
+            <dt data-l="dt_exp">Experience</dt>
             <dd>Head of Design, Anagi Development · Adjara Group · XYZ Architects · Espacio Studio · Lecturer, Caucasus University</dd>
           </dl>
         </div>
@@ -480,17 +484,17 @@ footer .copy{font-size:.74rem;color:var(--muted);letter-spacing:.02em}
 <!-- CONTACT -->
 <section class="contact" id="contact">
   <div class="contact-card reveal">
-    <div class="eyebrow"><span class="tick"></span>Get in touch</div>
-    <h2>Let's design your <em>space</em></h2>
-    <p class="contact-lede">Tell us about the project — a home, a shop, a café or a workspace. We'll take it from the first idea to the finished room.</p>
-    <a class="btn btn-inv" href="questionnaire/" style="position:relative;margin-top:30px">Fill the design questionnaire <span class="arr">→</span></a>
+    <div class="eyebrow"><span class="tick"></span><span data-l="c_eyebrow">Get in touch</span></div>
+    <h2 data-l="c_h2">Let's design your <em>space</em></h2>
+    <p class="contact-lede" data-l="c_lede">Tell us about the project — a home, a shop, a café or a workspace. We'll take it from the first idea to the finished room.</p>
+    <a class="btn btn-inv" href="questionnaire/" style="position:relative;margin-top:30px"><span data-l="c_btn">Fill the design questionnaire</span> <span class="arr">→</span></a>
     <div class="contact-rows">
-      <div class="crow"><div class="k">Email</div><a class="v" href="mailto:info@espacio.ge">info@espacio.ge</a></div>
-      <div class="crow"><div class="k">Phone</div>
+      <div class="crow"><div class="k" data-l="c_email">Email</div><a class="v" href="mailto:info@espacio.ge">info@espacio.ge</a></div>
+      <div class="crow"><div class="k" data-l="c_phone">Phone</div>
         <a class="v sm" href="tel:+995555340345">+995 555 340 345</a>
         <a class="v sm" href="tel:+995579579977">+995 579 579 977</a>
       </div>
-      <div class="crow"><div class="k">Studio</div><div class="v">Tbilisi, Georgia</div></div>
+      <div class="crow"><div class="k" data-l="c_studio">Studio</div><div class="v" data-l="c_city">Tbilisi, Georgia</div></div>
     </div>
   </div>
 </section>
@@ -498,10 +502,10 @@ footer .copy{font-size:.74rem;color:var(--muted);letter-spacing:.02em}
 <footer>
   <a href="#top" class="brand">ESPACIO<span class="s">Studio</span></a>
   <div class="fnav">
-    <a href="#work">Work</a><a href="#studio">Studio</a><a href="#team">Team</a><a href="questionnaire/">Questionnaire</a>
+    <a href="#work" data-l="nav_work">Work</a><a href="#studio" data-l="nav_studio">Studio</a><a href="#team" data-l="nav_team">Team</a><a href="questionnaire/" data-l="f_quest">Questionnaire</a>
     <a href="mailto:info@espacio.ge">info@espacio.ge</a>
   </div>
-  <div class="copy">© <span id="yr"></span> Espacio Studio — Architecture &amp; Interior Design, Tbilisi</div>
+  <div class="copy">© <span id="yr"></span> <span data-l="f_copy">Espacio Studio — Architecture &amp; Interior Design, Tbilisi</span></div>
 </footer>
 
 <!-- LIGHTBOX -->
@@ -555,16 +559,103 @@ mb.addEventListener('click',()=>{links.classList.toggle('show');nav.classList.to
 links.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
   links.classList.remove('show');nav.classList.remove('menu-open');}));
 
+
+// ================= LANDING i18n (ge default) =================
+const ESP_L = {
+ge:{
+ nav_work:"ნამუშევრები", nav_studio:"სტუდია", nav_team:"გუნდი", nav_contact:"კონტაქტი",
+ nav_cta:"დაიწყე პროექტი", nav_cta2:"დაიწყე პროექტი", f_quest:"კითხვარი",
+ hero_meta:"არქიტექტურა და ინტერიერის დიზაინი — თბილისი",
+ hero_lede:"ჩვენ ვქმნით <b>სივრცეებს, სადაც დარჩენა გინდათ</b> — სახლები, მაღაზიები, კაფეები და სამუშაო სივრცეები მთელ საქართველოში, პირველი ესკიზიდან ბოლო დეტალამდე.",
+ hero_btn:"ნახეთ ნამუშევრები", st_ongoing:"მიმდინარე",
+ studio_eyebrow:"სტუდია",
+ studio_statement:"სიმშვიდე, ხასიათი და ოსტატობა — <em>შექმნილი</em> ისე, როგორც სინამდვილეში ცხოვრობთ.",
+ studio_p1:"Espacio — თბილისური არქიტექტურისა და ინტერიერის დიზაინის სტუდიაა, რომელსაც ორი არქიტექტორი უძღვება. ვმუშაობთ საცხოვრებელ და კომერციულ პროექტებზე — კერძო სახლები და ბინები, სავაჭრო სივრცეები, კაფეები და საცხობები, ოფისები და კლინიკები.",
+ studio_p2:"ყველა პროექტი იწყება იმით, თუ როგორ გამოიყენება სივრცე; შემდეგ ერთმანეთს ეწყობა მასალა, სინათლე და დეტალი, სანამ შედეგი გააზრებული და თბილი არ გახდება. ჩართულები ვრჩებით კონცეფციიდან და ვიზუალიზაციიდან ობიექტზე მონტაჟის ბოლო დღემდე.",
+ work_eyebrow:"რჩეული ნამუშევრები", work_h2:"პროექტები",
+ band_eyebrow:"კაფე და რესტორანი", band_quote:"სივრცეები, სადაც შეყოვნება <em>გინდა</em>.",
+ team_eyebrow:"გუნდი", team_h2:"ორი არქიტექტორი, ერთი სტუდია",
+ role:"არქიტექტორი / დიზაინერი", dt_edu:"განათლება", dt_exp:"გამოცდილება",
+ c_eyebrow:"დაგვიკავშირდით", c_h2:"შევქმნათ თქვენი <em>სივრცე</em>",
+ c_lede:"მოგვიყევით პროექტზე — სახლი, მაღაზია, კაფე თუ სამუშაო სივრცე. პირველი იდეიდან დასრულებულ ოთახამდე ჩვენ მივიყვანთ.",
+ c_btn:"შეავსეთ დიზაინის კითხვარი", c_email:"ელფოსტა", c_phone:"ტელეფონი", c_studio:"სტუდია", c_city:"თბილისი, საქართველო",
+ f_copy:"Espacio Studio — არქიტექტურა და ინტერიერის დიზაინი, თბილისი",
+ mq:["ინტერიერის არქიტექტურა","საცხოვრებელი","რითეილი","კაფე & რესტორანი","სამუშაო სივრცე","კონცეფცია და ვიზუალიზაცია","თბილისი, საქართველო"],
+ services:["ინტერიერის არქიტექტურა","საცხოვრებლის დიზაინი","რითეილი და ჰორეკა","სამუშაო სივრცეები და კლინიკები","კონცეფცია და ვიზუალიზაცია","ავეჯი და დეტალები"],
+ cats:{all:"ყველა",residential:"საცხოვრებელი",hospitality:"კაფე & რესტორანი",retail:"რითეილი",workspace:"სამუშაო სივრცე"},
+ stat:{Ongoing:"მიმდინარე",Completed:"დასრულებული",Concept:"კონცეფცია",Partnership:"პარტნიორობა"},
+ projWord:"პროექტი", title:"Espacio Studio — არქიტექტურა და ინტერიერის დიზაინი, თბილისი"},
+en:{
+ nav_work:"Work", nav_studio:"Studio", nav_team:"Team", nav_contact:"Contact",
+ nav_cta:"Start a project", nav_cta2:"Start a project", f_quest:"Questionnaire",
+ hero_meta:"Architecture & Interior Design — Est. Tbilisi",
+ hero_lede:"We design <b>spaces people want to stay in</b> — homes, shops, cafés and workplaces across Georgia, from first sketch to the last detail on site.",
+ hero_btn:"View the work", st_ongoing:"Ongoing",
+ studio_eyebrow:"The Studio",
+ studio_statement:"Calm, character and craft — <em>designed</em> for the way you actually live.",
+ studio_p1:"Espacio is a Tbilisi-based architecture and interior design practice led by two architects. We work across residential and commercial projects — private homes and apartments, retail spaces, cafés and bakeries, offices and clinics.",
+ studio_p2:"Every project starts with how a space will be used, then layers material, light and detail until it feels considered but never cold. We stay involved from concept and visualisation through to the finishes installed on site.",
+ work_eyebrow:"Selected Work", work_h2:"Projects",
+ band_eyebrow:"Hospitality", band_quote:"Spaces that make people <em>want</em> to linger.",
+ team_eyebrow:"The People", team_h2:"Two architects, one studio",
+ role:"Architect / Designer", dt_edu:"Education", dt_exp:"Experience",
+ c_eyebrow:"Get in touch", c_h2:"Let&#39;s design your <em>space</em>",
+ c_lede:"Tell us about the project — a home, a shop, a café or a workspace. We&#39;ll take it from the first idea to the finished room.",
+ c_btn:"Fill the design questionnaire", c_email:"Email", c_phone:"Phone", c_studio:"Studio", c_city:"Tbilisi, Georgia",
+ f_copy:"Espacio Studio — Architecture & Interior Design, Tbilisi",
+ mq:["Interior Architecture","Residential","Retail","Hospitality","Workspace","Concept & Visualisation","Tbilisi, Georgia"],
+ services:["Interior Architecture","Residential Design","Retail & Hospitality","Workspace & Clinics","Concept & Visualisation","Furniture & Detailing"],
+ cats:{all:"All",residential:"Residential",hospitality:"Hospitality",retail:"Retail",workspace:"Workspace"},
+ stat:{Ongoing:"Ongoing",Completed:"Completed",Concept:"Concept",Partnership:"Partnership"},
+ projWord:"projects", title:"Espacio Studio — Architecture & Interior Design, Tbilisi"},
+ru:{
+ nav_work:"Работы", nav_studio:"Студия", nav_team:"Команда", nav_contact:"Контакты",
+ nav_cta:"Начать проект", nav_cta2:"Начать проект", f_quest:"Анкета",
+ hero_meta:"Архитектура и дизайн интерьера — Тбилиси",
+ hero_lede:"Мы создаём <b>пространства, в которых хочется остаться</b> — дома, магазины, кафе и рабочие пространства по всей Грузии, от первого эскиза до последней детали.",
+ hero_btn:"Смотреть работы", st_ongoing:"В процессе",
+ studio_eyebrow:"Студия",
+ studio_statement:"Спокойствие, характер и мастерство — <em>созданные</em> для того, как вы живёте на самом деле.",
+ studio_p1:"Espacio — тбилисская студия архитектуры и дизайна интерьера, которую ведут два архитектора. Мы работаем над жилыми и коммерческими проектами — частные дома и квартиры, магазины, кафе и пекарни, офисы и клиники.",
+ studio_p2:"Каждый проект начинается с того, как пространство будет использоваться; затем слой за слоем добавляются материал, свет и детали — пока результат не станет продуманным, но тёплым. Мы остаёмся вовлечёнными от концепции и визуализации до последней детали на объекте.",
+ work_eyebrow:"Избранные работы", work_h2:"Проекты",
+ band_eyebrow:"Кафе и рестораны", band_quote:"Пространства, в которых <em>хочется</em> задержаться.",
+ team_eyebrow:"Команда", team_h2:"Два архитектора, одна студия",
+ role:"Архитектор / Дизайнер", dt_edu:"Образование", dt_exp:"Опыт",
+ c_eyebrow:"Свяжитесь с нами", c_h2:"Создадим ваше <em>пространство</em>",
+ c_lede:"Расскажите о проекте — дом, магазин, кафе или рабочее пространство. Мы проведём его от первой идеи до готовой комнаты.",
+ c_btn:"Заполнить дизайн-анкету", c_email:"Почта", c_phone:"Телефон", c_studio:"Студия", c_city:"Тбилиси, Грузия",
+ f_copy:"Espacio Studio — Архитектура и дизайн интерьера, Тбилиси",
+ mq:["Архитектура интерьера","Жилые","Ритейл","Кафе и рестораны","Офисы","Концепция и визуализация","Тбилиси, Грузия"],
+ services:["Архитектура интерьера","Дизайн жилья","Ритейл и HoReCa","Офисы и клиники","Концепция и визуализация","Мебель и детали"],
+ cats:{all:"Все",residential:"Жилые",hospitality:"Кафе и рестораны",retail:"Ритейл",workspace:"Офисы"},
+ stat:{Ongoing:"В процессе",Completed:"Завершён",Concept:"Концепт",Partnership:"Партнёрство"},
+ projWord:"проектов", title:"Espacio Studio — Архитектура и дизайн интерьера, Тбилиси"}
+};
+let espLang = localStorage.getItem("espacio_lang") || "ge";
+function L(){ return ESP_L[espLang] || ESP_L.ge; }
+function applyLang(l){
+  espLang = l; localStorage.setItem("espacio_lang", l);
+  document.documentElement.lang = l === "ge" ? "ka" : l;
+  document.title = L().title;
+  document.querySelectorAll("[data-l]").forEach(el => { const v = L()[el.dataset.l]; if (v !== undefined) el.innerHTML = v; });
+  document.querySelectorAll("#langPick button").forEach(b => b.classList.toggle("on", b.dataset.lang === l));
+  buildMq();
+  document.getElementById("services").innerHTML = L().services.map((s,i)=>
+    `<div class="row"><span class="name">${s}</span><span class="idx">0${i+1}</span></div>`).join("");
+  filtersEl.querySelectorAll("button").forEach(b => b.textContent = L().cats[b.dataset.cat] || b.dataset.cat);
+  const act = document.querySelector(".filters button.active");
+  renderGrid(act ? act.dataset.cat : "all");
+}
+
 // marquee
-const mqWords=['Interior Architecture','Residential','Retail','Hospitality','Workspace','Concept & Visualisation','Tbilisi, Georgia'];
+
 const mq=document.getElementById('mq');
-function buildMq(){let h='';for(let r=0;r<2;r++){mqWords.forEach(w=>h+=`<span>${w}<i></i></span>`);}mq.innerHTML=h;}
+function buildMq(){let h='';for(let r=0;r<2;r++){L().mq.forEach(w=>h+=`<span>${w}<i></i></span>`);}mq.innerHTML=h;}
 buildMq();
 
 // services list
-const services=['Interior Architecture','Residential Design','Retail & Hospitality','Workspace & Clinics','Concept & Visualisation','Furniture & Detailing'];
-document.getElementById('services').innerHTML=services.map((s,i)=>
-  `<div class="row"><span class="name">${s}</span><span class="idx">0${i+1}</span></div>`).join('');
+
 
 // ---- WORK GRID ----
 const cats=[['all','All'],['residential','Residential'],['hospitality','Hospitality'],['retail','Retail'],['workspace','Workspace']];
@@ -585,10 +676,10 @@ function renderGrid(filter='all'){
         <div class="veil"></div><div class="ovl"></div>
       </div>
       <div class="info"><div class="meta"><h3>${p.name}</h3><div class="loc">${p.loc}</div></div>
-        <span class="tag">${p.status||p.catLabel}</span></div>
+        <span class="tag">${L().stat[p.status]||p.status||L().cats[p.cat]||p.catLabel}</span></div>
     </article>`;
   }).join('');
-  countEl.textContent=`${String(list.length).padStart(2,'0')} ${filter==='all'?'projects':cats.find(c=>c[0]===filter)[1]+' projects'}`;
+  countEl.textContent=`${String(list.length).padStart(2,'0')} ${filter==='all'?L().projWord:(L().cats[filter]||filter)+' · '+L().projWord}`;
   // reveal cards
   requestAnimationFrame(()=>grid.querySelectorAll('.card').forEach(c=>io.observe(c)));
   bindCards();
@@ -647,7 +738,8 @@ const io=new IntersectionObserver((es)=>{
 },{threshold:.12,rootMargin:'0px 0px -8% 0px'});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 
-renderGrid('all');
+document.querySelectorAll('#langPick button').forEach(b=>b.onclick=()=>applyLang(b.dataset.lang));
+applyLang(espLang);
 // live projects from Supabase (fallback = embedded list)
 (async()=>{try{
   const r=await fetch('https://coxsphbxxmotohicnosf.supabase.co/rest/v1/projects?visible=eq.true&order=sort.asc&select=slug,name,loc,status,cat,cover',

@@ -144,7 +144,7 @@ async function loadRemoteSchema() {
 
 /* ---------- state ---------- */
 const SAVE_KEY = "mariam_form_v1";
-let state = { lang: CONFIG.DEFAULT_LANG, step: 0, done: false, data: {} };
+let state = { lang: (function(){ try { return localStorage.getItem("espacio_lang") || CONFIG.DEFAULT_LANG; } catch(e){ return CONFIG.DEFAULT_LANG; } })(), step: 0, done: false, data: {} };
 try {
   const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
   if (saved && saved.data) state = Object.assign(state, saved, { done:false });
