@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Espacio Studio</title>
+<title>Admin PREVIEW (read-only)</title>
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -249,6 +249,26 @@ td .mini{font-size:12.5px}
   </div>
 </div>
 <script src="../questionnaire/config.js?v=6"></script>
+<script>
+/* PREVIEW MODE — read-only, fake session, no writes possible */
+sessionStorage.setItem('esp_admin_session', JSON.stringify({token:'PREVIEW', email:'preview — read-only', exp: Date.now()+86400000}));
+window.__PREVIEW__ = true;
+window.addEventListener('DOMContentLoaded',()=>{const b=document.createElement('div');b.style.cssText='position:fixed;top:0;left:0;right:0;z-index:999;background:#c94f3d;color:#fff;text-align:center;font:11px Archivo,sans-serif;letter-spacing:2px;padding:3px';b.textContent='PREVIEW — READ ONLY';document.body.appendChild(b);});
+const _fetch = window.fetch.bind(window);
+window.fetch = (url, opt={}) => {
+  const u = String(url); const m = (opt.method||'GET').toUpperCase();
+  if (u.includes('/rest/v1/submissions')) {
+    if (m === 'GET') return _fetch(u.replace(/^.*\/rest\//, CONFIG.SUPABASE_URL+'/rest/'), {headers:{apikey: CONFIG.SUPABASE_KEY}}).catch(()=>new Response('[]',{status:200}));
+    return Promise.resolve(new Response('preview: read-only', {status:403}));
+  }
+  if (u.includes('form_schema')) {
+    if (m !== 'GET') return Promise.resolve(new Response('preview: read-only', {status:403}));
+    return _fetch(u, {headers:{apikey: CONFIG.SUPABASE_KEY}});
+  }
+  if (u.includes('/storage/') || u.includes('/auth/')) return Promise.resolve(new Response('preview: read-only', {status:403}));
+  return _fetch(url, opt);
+};
+</script>
 <script src="admin.js?v=5"></script>
 </body>
 </html>

@@ -38,9 +38,9 @@ let DOC = null, CLEAN = "", VIEW = "questions", SUBS = null, OPEN_ED = null;
 const dirty = () => DOC && JSON.stringify(DOC) !== CLEAN;
 const CORE_DRIVERS = ["l_bedrooms","l_bathCount","l_bathTypes"];
 const SPECIAL_TYPES = ["styles","palette","swatch","tone"];
-const TYPE_LABELS = { text:"Text", tel:"Phone", email:"E-mail", textarea:"Long text", num:"Number",
-  yn:"Yes / No", radio:"Single choice", check:"Multi choice", imgradio:"Image choice",
-  imgcheck:"Image multi", styles:"Style boards ★", palette:"Palettes ★", swatch:"Swatches ★", tone:"Tone ★" };
+const TYPE_LABELS = { text:"Short text", tel:"Phone", email:"E-mail", textarea:"Long text", num:"Number",
+  yn:"Yes / No", radio:"Choose one", check:"Choose several", imgradio:"Choose one · photos",
+  imgcheck:"Choose several · photos", styles:"Style boards ★", palette:"Colour palettes ★", swatch:"Swatches ★", tone:"Light tone ★" };
 
 /* i18n helpers: labels live in DOC.i18n under keys */
 const langName = { ge:"ქართული", en:"English", ru:"Русский" };
@@ -111,11 +111,20 @@ function renderLogin() {
 }
 
 /* ---------- render: questions builder ---------- */
+function findQByAnyId(qid) {
+  for (const sc of scopes()) { const q = qList(sc).find(q => q.id === qid || ("w_"+q.id) === qid || ("b_"+q.id) === qid); if (q) return q; }
+  return null;
+}
+function depValueLabel(dep) {
+  const tq = findQByAnyId(dep.q);
+  const lab = x => { const o = tq && (tq.options||[]).find(o => o.v === x);
+    return o ? tr(o.label,"ge") : (x==="yes"?"კი":x==="no"?"არა":x); };
+  return Array.isArray(dep.v) ? dep.v.map(lab).join(" / ") : lab(dep.v);
+}
 function depSummary(dep) {
   if (!dep) return "";
-  const target = tr(findLabelKey(dep.q) || dep.q, "en");
-  const op = dep.op === "eq" ? "=" : dep.op === "in" ? "∈" : dep.op === "gt" ? ">" : dep.op;
-  return `${target} ${op} ${Array.isArray(dep.v) ? dep.v.join(",") : dep.v}`;
+  const target = tr(findLabelKey(dep.q) || dep.q, "ge");
+  return `${target} → ${depValueLabel(dep)}`;
 }
 function findLabelKey(qid) {
   for (const sc of scopes()) { const q = qList(sc).find(q => q.id === qid || ("w_"+q.id) === qid || ("b_"+q.id) === qid); if (q) return q.label; }
@@ -123,84 +132,132 @@ function findLabelKey(qid) {
 }
 
 function renderQuestions() {
-  const secs = scopes().map(sc => {
+  const scs = scopes();
+  const nav = scs.map((sc, i) => {
+    const hidden = sc.obj.visible === false;
+    const kindMark = sc.kind === "template" ? "⟳ " : "";
+    return `<button class="qb-nav ${hidden?"off":""}" data-nav="${sc.key}">
+      <i>${String(i+1).padStart(2,"0")}</i><span>${kindMark}${esc(sc.title)}</span><em>${qList(sc).length}</em></button>`;
+  }).join("");
+  const secs = scs.map((sc, i) => {
     const rows = qList(sc).map((q, qi) => qRow(sc, q, qi)).join("");
     const onCls = sc.obj.visible !== false ? "on" : "";
-    return `<div class="sec" data-scope="${sc.key}">
+    const tplNote = sc.kind === "template"
+      ? `<div class="tpl-note">⟳ This block repeats for every ${sc.key} the client asks for — edit it once, it applies to all.</div>` : "";
+    return `<div class="sec" data-scope="${sc.key}" id="sec-${sc.key}">
       <div class="sec-head">
-        <button class="sw ${onCls}" data-act="sec-vis" data-scope="${sc.key}" title="Show / hide section"></button>
+        <span class="sec-num">${String(i+1).padStart(2,"0")}</span>
         <h2>${esc(sc.title)}</h2>
         ${sc.badge ? `<span class="badge">${sc.badge}</span>` : ""}
         <span class="cnt">${qList(sc).length} questions</span>
+        <label class="swlab">visible on site
+          <button class="sw ${onCls}" data-act="sec-vis" data-scope="${sc.key}" title="Show or hide this whole section"></button></label>
         <button class="btn ghost sm" data-act="add" data-scope="${sc.key}">+ Add question</button>
       </div>
+      ${tplNote}
       <div class="editor hidden" data-addbox="${sc.key}"></div>
       ${rows}
     </div>`;
   }).join("");
-  $("#main").innerHTML = `<div class="wrap">
+  $("#main").innerHTML = `<div class="wrap wide">
     <div class="toolrow"><h1>Questionnaire</h1>
-      <span class="hint">Changes go live only after you press “Publish changes”.</span></div>
-    ${secs}</div>`;
+      <input class="qb-search" id="qbSearch" placeholder="🔍 Find a question…">
+      <span class="hint">Changes go live only after “Publish changes”.</span></div>
+    <div class="qb-layout">
+      <nav class="qb-side">${nav}</nav>
+      <div class="qb-main">${secs}</div>
+    </div></div>`;
+  const search = $("#qbSearch");
+  if (search) search.oninput = () => {
+    const t = search.value.trim().toLowerCase();
+    document.querySelectorAll(".q-row").forEach(r => {
+      r.style.display = !t || r.textContent.toLowerCase().includes(t) ? "" : "none"; });
+    document.querySelectorAll(".qb-main .sec").forEach(s => {
+      const any = [...s.querySelectorAll(".q-row")].some(r => r.style.display !== "none");
+      s.style.display = any || !t ? "" : "none"; });
+  };
+  document.querySelectorAll("[data-nav]").forEach(b => b.onclick = () => {
+    document.getElementById("sec-" + b.dataset.nav)?.scrollIntoView({ behavior:"smooth", block:"start" }); });
   if (OPEN_ED) reopenEditor();
 }
 
 function qRow(sc, q, qi) {
   const lock = isCore(sc, q);
   const off = q.visible === false;
-  const dep = q.dep ? `<span class="chip dep" title="Shown only when: ${esc(depSummary(q.dep))}">if</span>` : "";
+  const dep = q.dep ? `<span class="chip dep" title="Shown only when: ${esc(depSummary(q.dep))}">⤷ ${esc(depSummary(q.dep)).slice(0,46)}</span>` : "";
   return `<div class="q-row ${off?"off":""}" data-scope="${sc.key}" data-qi="${qi}">
+    <span class="q-num">${String(qi+1).padStart(2,"0")}</span>
     <span class="q-move">
       <button data-act="up" title="Move up">▲</button>
       <button data-act="down" title="Move down">▼</button></span>
-    <span class="q-label">${esc(tr(q.label,"en"))} <span style="color:var(--muted);font-size:11px">· ${esc(tr(q.label,"ge"))}</span></span>
+    <span class="q-label"><b>${esc(tr(q.label,"ge"))}</b><small>${esc(tr(q.label,"en"))}</small></span>
+    ${off ? '<span class="chip offchip">hidden</span>' : ""}
     ${dep}
     <span class="chip">${TYPE_LABELS[q.type]||q.type}</span>
-    <button class="sw ${off?"":"on"}" data-act="vis" title="Show / hide" ${lock&&CORE_DRIVERS.includes(q.id)?'disabled style="opacity:.3"':""}></button>
-    <button class="iconb" data-act="edit" title="Edit">✎</button>
-    <button class="iconb ${lock?"lock":""}" data-act="del" title="${lock?"Built-in — hide it instead":"Delete"}" ${lock?"disabled":""}>🗑</button>
+    <label class="swlab" title="Show this question on the site">
+      <button class="sw ${off?"":"on"}" data-act="vis" ${lock&&CORE_DRIVERS.includes(q.id)?'disabled style="opacity:.3"':""}></button></label>
+    <button class="editb" data-act="edit">✎ Edit</button>
+    <button class="iconb ${lock?"lock":""}" data-act="del" title="${lock?"Built-in — hide it instead of deleting":"Delete question"}" ${lock?"disabled":""}>🗑</button>
   </div>`;
 }
-/* ADMIN_PART2 */
 
 /* ---------- editor ---------- */
 function editorHtml(sc, q) {
   const kinds = ["text","textarea","num","yn","radio","check"];
   const special = SPECIAL_TYPES.includes(q.type) || ["imgradio","imgcheck","tel","email"].includes(q.type);
   const labelInputs = ["ge","en","ru"].map(l => `
-    <div><label>Question · ${langName[l]}</label>
+    <div><label>${langName[l]}</label>
     <input data-ed="label" data-lang="${l}" value="${esc(tr(q.label,l))}"></div>`).join("");
+  const thumb = o => o.img
+    ? `<img class="opt-thumb" src="../questionnaire/assets/opts/${esc(o.img)}.jpg" onerror="this.style.visibility='hidden'">`
+    : `<span class="opt-thumb none">—</span>`;
   const opts = (q.options||[]).map((o,oi) => `
     <div class="opt-row" data-oi="${oi}">
-      <input value="${esc(o.v)}" disabled title="value">
+      ${thumb(o)}
+      <input value="${esc(o.v)}" disabled title="internal value — used in rules">
       ${["ge","en","ru"].map(l=>`<input data-ed="optlabel" data-oi="${oi}" data-lang="${l}" placeholder="${langName[l]}" value="${esc(tr(o.label,l))}">`).join("")}
-      <input data-ed="optimg" data-oi="${oi}" placeholder="image file (optional)" value="${esc(o.img||"")}">
+      <input data-ed="optimg" data-oi="${oi}" placeholder="photo file name" value="${esc(o.img||"")}">
       <button class="del" data-act="delopt" data-oi="${oi}" title="Remove option">✕</button>
     </div>`).join("");
+  const optHead = `<div class="opt-head"><span></span><span>value</span><span>ქართული</span><span>English</span><span>Русский</span><span>photo file</span><span></span></div>`;
   const choice = ["radio","check","imgradio","imgcheck","swatch"].includes(q.type);
-  const optHead = `<div class="opt-head"><span>value (internal)</span><span>ქართული</span><span>English</span><span>Русский</span><span>image file</span><span></span></div>`;
+
   const depTargets = qList(sc).filter(x => x.id !== q.id && x.options)
-    .map(x => `<option value="${esc(x.id)}" ${q.dep&&(q.dep.q===x.id||q.dep.q===("w_"+x.id)||q.dep.q===("b_"+x.id))?"selected":""}>${esc(tr(x.label,"en"))}</option>`).join("");
+    .map(x => `<option value="${esc(x.id)}" ${q.dep&&(q.dep.q===x.id||q.dep.q===("w_"+x.id)||q.dep.q===("b_"+x.id))?"selected":""}>${esc(tr(x.label,"ge"))}</option>`).join("");
+  const depTarget = q.dep ? qList(sc).find(x => x.id === q.dep.q || ("w_"+x.id) === q.dep.q || ("b_"+x.id) === q.dep.q) : null;
+  const curVals = q.dep ? (Array.isArray(q.dep.v) ? q.dep.v : [q.dep.v]) : [];
+  const depValues = depTarget
+    ? (depTarget.options||[]).map(o => `<label class="depval ${curVals.includes(o.v)?"on":""}">
+        <input type="checkbox" data-ed="depval" value="${esc(o.v)}" ${curVals.includes(o.v)?"checked":""}>
+        ${esc(tr(o.label,"ge"))}</label>`).join("")
+    : `<span class="hint">choose a question first</span>`;
+
   return `<div class="editor" data-edscope="${sc.key}" data-edq="${esc(q.id)}">
-    <div class="grid3">${labelInputs}</div>
-    <div class="grid3">
-      <div><label>Type</label>
-        ${special ? `<input value="${TYPE_LABELS[q.type]||q.type}" disabled>` :
-        `<select data-ed="type">${kinds.map(k=>`<option value="${k}" ${q.type===k?"selected":""}>${TYPE_LABELS[k]}</option>`).join("")}</select>`}</div>
-      <div><label>Required</label><select data-ed="req"><option value="1" ${q.req!==false?"selected":""}>Yes</option><option value="0" ${q.req===false?"selected":""}>No</option></select></div>
-      <div><label>Shown</label><select data-ed="vis"><option value="1" ${q.visible!==false?"selected":""}>Yes</option><option value="0" ${q.visible===false?"selected":""}>Hidden</option></select></div>
-    </div>
-    ${choice ? `<label>Answer options — one row per option, texts in all three languages</label>${optHead}${opts}<button class="btn ghost sm" data-act="addopt">+ Add option</button>` : ""}
-    <label>Show this question only if…</label>
-    <div class="dep-grid">
-      <select data-ed="depq"><option value="">— always shown —</option>${depTargets}</select>
-      <select data-ed="depop"><option value="eq" ${!q.dep||q.dep.op==="eq"?"selected":""}>equals</option><option value="in" ${q.dep&&q.dep.op==="in"?"selected":""}>is one of</option></select>
-      <input data-ed="depv" placeholder="value (comma-separate for several)" value="${esc(q.dep?(Array.isArray(q.dep.v)?q.dep.v.join(","):q.dep.v):"")}">
-    </div>
-    <div class="hint">Use option <b>values</b> (e.g. yes, no, hung, both) — hover the “if” chip on a row to check a rule.</div>
-    <div class="row-actions"><button class="btn sm" data-act="closeed">Done</button></div>
+    <div class="ed-block"><h4>1 · Question text</h4>
+      <div class="grid3">${labelInputs}</div></div>
+    <div class="ed-block"><h4>2 · Behaviour</h4>
+      <div class="grid3">
+        <div><label>Answer type</label>
+          ${special ? `<input value="${TYPE_LABELS[q.type]||q.type}" disabled>` :
+          `<select data-ed="type">${kinds.map(k=>`<option value="${k}" ${q.type===k?"selected":""}>${TYPE_LABELS[k]}</option>`).join("")}</select>`}</div>
+        <div><label>Required</label><select data-ed="req"><option value="1" ${q.req!==false?"selected":""}>Yes — must be answered</option><option value="0" ${q.req===false?"selected":""}>No — optional</option></select></div>
+        <div><label>Shown on site</label><select data-ed="vis"><option value="1" ${q.visible!==false?"selected":""}>Yes</option><option value="0" ${q.visible===false?"selected":""}>Hidden</option></select></div>
+      </div></div>
+    ${choice ? `<div class="ed-block"><h4>3 · Answer options</h4>${optHead}${opts}
+      <button class="btn ghost sm" data-act="addopt">+ Add option</button></div>` : ""}
+    <div class="ed-block"><h4>${choice?"4":"3"} · When is this question shown?</h4>
+      <div class="dep-grid">
+        <div><label>Show it…</label>
+          <select data-ed="depq"><option value="">— always —</option>${depTargets}</select></div>
+        <div><label>…when the answer is</label>
+          <div class="depvals">${depValues}</div></div>
+      </div>
+      <div class="hint dep-live">${q.dep ? "⤷ Shown only when: " + esc(depSummary(q.dep)) : "This question is always visible."}</div></div>
+    <div class="row-actions"><button class="btn sm" data-act="closeed">Done</button>
+      <span class="hint">Remember — nothing is live until you press “Publish changes” below.</span></div>
   </div>`;
 }
+
 function reopenEditor(scroll) {
   const { scope, qid } = OPEN_ED;
   const sc = scopes().find(s => s.key === scope); if (!sc) return;
@@ -436,16 +493,24 @@ document.addEventListener("input", e => {
   const kind = ed.dataset.ed;
   if (kind === "label") setTr(q.label, ed.dataset.lang, ed.value);
   else if (kind === "optlabel") setTr(q.options[+ed.dataset.oi].label, ed.dataset.lang, ed.value);
-  else if (kind === "optimg") { const v = ed.value.trim(); if (v) q.options[+ed.dataset.oi].img = v; else delete q.options[+ed.dataset.oi].img; }
+  else if (kind === "optimg") { const v = ed.value.trim(); if (v) q.options[+ed.dataset.oi].img = v; else delete q.options[+ed.dataset.oi].img;
+    const row = ed.closest(".opt-row"); const t = row && row.querySelector(".opt-thumb");
+    if (t) { if (v) { t.outerHTML = `<img class="opt-thumb" src="../questionnaire/assets/opts/${v}.jpg" onerror="this.style.visibility='hidden'">`; } } }
   else if (kind === "type") q.type = ed.value;
   else if (kind === "req") q.req = ed.value === "1";
   else if (kind === "vis") q.visible = ed.value === "1";
-  else if (["depq","depop","depv"].includes(kind)) {
-    const dq = box.querySelector('[data-ed="depq"]').value;
-    if (!dq) delete q.dep;
-    else { const op = box.querySelector('[data-ed="depop"]').value;
-      let v = box.querySelector('[data-ed="depv"]').value.trim();
-      q.dep = { q:dq, op, v: op === "in" ? v.split(",").map(x=>x.trim()).filter(Boolean) : v }; }
+  else if (kind === "depq") {
+    OPEN_ED = { scope: box.dataset.edscope, qid: q.id };
+    const dq = ed.value;
+    if (!dq) delete q.dep; else q.dep = { q:dq, op:"in", v:[] };
+    renderQuestions();
+  }
+  else if (kind === "depval") {
+    const vals = [...box.querySelectorAll('[data-ed="depval"]:checked')].map(c => c.value);
+    if (q.dep) { q.dep.op = "in"; q.dep.v = vals; if (!vals.length) {} }
+    box.querySelectorAll(".depval").forEach(l => l.classList.toggle("on", l.querySelector("input").checked));
+    const live = box.querySelector(".dep-live");
+    if (live) live.textContent = vals.length ? "⤷ Shown only when: " + depSummary(q.dep) : "Pick at least one answer — otherwise the question never shows.";
   }
   updateSavebar();
 });
