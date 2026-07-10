@@ -115,7 +115,16 @@ function findQByAnyId(qid) {
   for (const sc of scopes()) { const q = qList(sc).find(q => q.id === qid || ("w_"+q.id) === qid || ("b_"+q.id) === qid); if (q) return q; }
   return null;
 }
+// A dependency target's selectable answers. Yes/No ("yn") questions carry no
+// options array, so synthesize their two values — otherwise a yn question could
+// never be picked as a rule target (it stayed invisible in the dropdown).
+function depOptsOf(q) {
+  if (q.options && q.options.length) return q.options;
+  if (q.type === "yn") return [{ v: "yes", label: "ui_yes" }, { v: "no", label: "ui_no" }];
+  return [];
+}
 function depValueLabel(dep) {
+  if (dep.op === "truthy") return "any answer";
   const tq = findQByAnyId(dep.q);
   const lab = x => { const o = tq && (tq.options||[]).find(o => o.v === x);
     return o ? tr(o.label,"ge") : (x==="yes"?"კი":x==="no"?"არა":x); };
@@ -224,15 +233,18 @@ function editorHtml(sc, q) {
   const optHead = `<div class="opt-head"><span></span><span class="adv">value</span><span>ქართული</span><span>English</span><span>Русский</span><span class="adv">photo</span><span></span><span></span></div>`;
   const choice = ["radio","check","imgradio","imgcheck","swatch"].includes(q.type);
 
-  const depTargets = qList(sc).filter(x => x.id !== q.id && x.options)
+  const depTargets = qList(sc).filter(x => x.id !== q.id)
     .map(x => `<option value="${esc(x.id)}" ${q.dep&&(q.dep.q===x.id||q.dep.q===("w_"+x.id)||q.dep.q===("b_"+x.id))?"selected":""}>${esc(tr(x.label,"ge"))}</option>`).join("");
   const depTarget = q.dep ? qList(sc).find(x => x.id === q.dep.q || ("w_"+x.id) === q.dep.q || ("b_"+x.id) === q.dep.q) : null;
   const curVals = q.dep ? (Array.isArray(q.dep.v) ? q.dep.v : [q.dep.v]) : [];
-  const depValues = depTarget
-    ? (depTarget.options||[]).map(o => `<label class="depval ${curVals.includes(o.v)?"on":""}">
+  const depOpts = depTarget ? depOptsOf(depTarget) : [];
+  const depValues = !depTarget
+    ? `<span class="hint">choose a question first</span>`
+    : depOpts.length
+    ? depOpts.map(o => `<label class="depval ${curVals.includes(o.v)?"on":""}">
         <input type="checkbox" data-ed="depval" value="${esc(o.v)}" ${curVals.includes(o.v)?"checked":""}>
         ${esc(tr(o.label,"ge"))}</label>`).join("")
-    : `<span class="hint">choose a question first</span>`;
+    : `<span class="hint dep-any">✓ shown whenever this question has been answered (any answer)</span>`;
 
   return `<div class="editor" data-edscope="${sc.key}" data-edq="${esc(q.id)}">
     <div class="ed-block"><h4>1 · Question text</h4>
@@ -528,7 +540,9 @@ document.addEventListener("input", e => {
   else if (kind === "depq") {
     OPEN_ED = { scope: box.dataset.edscope, qid: q.id };
     const dq = ed.value;
-    if (!dq) delete q.dep; else q.dep = { q:dq, op:"in", v:[] };
+    if (!dq) delete q.dep;
+    else { const tgt = qList(sc).find(x => x.id === dq || ("w_"+x.id) === dq || ("b_"+x.id) === dq);
+      q.dep = (tgt && depOptsOf(tgt).length) ? { q:dq, op:"in", v:[] } : { q:dq, op:"truthy" }; }
     renderQuestions();
   }
   else if (kind === "depval") {
