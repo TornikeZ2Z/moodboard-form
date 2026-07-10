@@ -34,6 +34,9 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:4
 .pstep.now i{background:var(--accent);border-color:var(--accent);color:#fff}
 .pstep.done{color:var(--accent-ink)}
 .pstep.done i{background:var(--accent-soft);border-color:var(--accent-soft);color:var(--accent-ink)}
+.pstep{cursor:pointer}
+.pstep.ok i{background:var(--good);border-color:var(--good);color:#fff}
+.pstep.todo i{background:var(--bad);border-color:var(--bad);color:#fff}
 .progress-bar{height:2.5px;background:var(--line);border-radius:2px;overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);width:0;transition:width .6s var(--ease)}
 
@@ -89,9 +92,9 @@ textarea.inp{min-height:92px;resize:vertical}
 .card{position:relative;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:pointer;background:var(--card);transition:.28s var(--ease)}
 .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lift);border-color:var(--line2)}
 .card .ph,.card>img{overflow:hidden;display:block}
-.card img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;transition:transform .7s var(--ease)}
+.card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;transition:transform .7s var(--ease)}
 .card:hover img{transform:scale(1.05)}
-.card.tall img{aspect-ratio:3/3.6}
+.card.tall img{aspect-ratio:1/1}
 .card .cap{padding:11px 38px 12px 14px;font-size:13px;line-height:1.35;font-weight:500}
 .card .tick{position:absolute;right:9px;bottom:9px;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line2);background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent;transition:.2s var(--ease)}
 .card.on{border-color:var(--accent);box-shadow:0 0 0 1.5px var(--accent), var(--shadow-lift)}
@@ -149,7 +152,7 @@ textarea.inp{min-height:92px;resize:vertical}
 .welcome .meta b{display:block;font-family:var(--serif);font-weight:800;font-size:24px;color:var(--ink)}
 .wl-figure{position:relative;margin:0}
 .wl-figure .frame{position:absolute;inset:16px -16px -16px 16px;border:1.5px solid var(--accent);border-radius:2px}
-.wl-figure .imgwrap{position:relative;overflow:hidden;border-radius:2px;aspect-ratio:4/4.4;box-shadow:0 30px 60px -30px rgba(22,22,40,.4)}
+.wl-figure .imgwrap{position:relative;overflow:hidden;border-radius:2px;aspect-ratio:1/1;box-shadow:0 30px 60px -30px rgba(22,22,40,.4)}
 .wl-figure img{width:100%;height:100%;object-fit:cover;transition:transform 6s var(--ease)}
 .wl-figure:hover img{transform:scale(1.06)}
 @media(max-width:760px){.wl-figure{max-width:420px;margin:10px auto 0}}

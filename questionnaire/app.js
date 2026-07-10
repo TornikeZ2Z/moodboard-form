@@ -512,7 +512,7 @@ function renderStep() {
 
   if (st.type === "review") {
     stage.innerHTML = sectionHead(st) + renderReview(steps);
-    $("#btnNext").innerHTML = esc(T("ui_submit"));
+    $("#btnNext").innerHTML = esc(({ge:"მუდბორდის ნახვა",en:"See the moodboard",ru:"Показать мудборд"}[state.lang]||"See the moodboard")) + ' <span class="arr">→</span>';
   } else {
     const qs = st.qs.filter(q => !q.show || q.show(D));
     qs.forEach(q => { if (q.t === "num" && D[q.id] === undefined) { D[q.id] = q.min; } });
@@ -545,8 +545,9 @@ function renderProgress(steps) {
   const iNow = list.indexOf(steps[state.step]);
   $("#progressSteps").innerHTML = list.map((s,i) => {
     const label = s.chip ? (typeof s.chip === "function" ? s.chip() : s.chip) : T(s.icon);
-    const mark = i < iNow ? "✓" : String(i+1).padStart(2,"0");
-    return `<span class="pstep ${i===iNow?"now":i<iNow?"done":""}"><i>${mark}</i>${esc(label)}</span>`;
+    const stat = s.qs ? (sectionComplete(s) ? "ok" : "todo") : "";
+    const mark = stat === "ok" ? "✓" : String(i+1).padStart(2,"0");
+    return `<span class="pstep ${i===iNow?"now":""} ${stat}" data-goto="${steps.indexOf(s)}" role="button" tabindex="0"><i>${mark}</i>${esc(label)}</span>`;
   }).join("");
   const nowEl = document.querySelector(".pstep.now");
   if (nowEl) nowEl.scrollIntoView({ inline:"center", block:"nearest", behavior:"smooth" });
@@ -582,6 +583,21 @@ function validateStep() {
   });
   if (firstErr) { firstErr.scrollIntoView({ behavior:"smooth", block:"center" }); return false; }
   return true;
+}
+
+// True when every required, currently-visible question in a section is validly filled.
+function sectionComplete(st) {
+  if (!st.qs) return true;
+  return st.qs.filter(q => !q.show || q.show(D)).every(q => {
+    if (!q.req) return true;
+    const v = D[q.id];
+    if (v === undefined || v === null || v === "" || (Array.isArray(v) && !v.length)) return false;
+    if (q.t === "email" && !reEmail.test(v)) return false;
+    if (q.t === "tel" && !rePhone.test(v)) return false;
+    if (q.exactFn && (Array.isArray(v) ? v.length : 0) !== q.exactFn(D)) return false;
+    if (v === "other" && q.other && !(D[q.id+"_other"]||"").trim()) return false;
+    return true;
+  });
 }
 
 /* ---------- review ---------- */
@@ -728,9 +744,14 @@ function renderFinal() {
     ok:`<div class="sending send-ok">${T("ui_sendOk")}</div>`,
     fail:`<div class="sending send-fail">${T("ui_sendFail")} <button class="btn ghost" id="btnRetry" style="padding:6px 16px;margin-left:8px">${T("ui_retry")}</button></div>`
   }[sendState];
+  const fin = {
+    ge:{ t:"თქვენი მუდბორდი", p:"ეს არის თქვენი პასუხების მიხედვით შედგენილი მუდბორდი. (სატესტო რეჟიმი — მონაცემები არ იგზავნება.)" },
+    en:{ t:"Your moodboard", p:"Here's the moodboard composed from your selections. (Preview mode — nothing is submitted.)" },
+    ru:{ t:"Ваш мудборд", p:"Мудборд, составленный по вашим ответам. (Демо-режим — данные не отправляются.)" }
+  }[state.lang] || { t:"Your moodboard", p:"Here's the moodboard from your selections. (Preview mode — nothing is submitted.)" };
   stage.innerHTML = `<div class="welcome" style="padding-bottom:6px">
       <div class="wl-kicker">✦</div>
-      <h1>${esc(T("ui_thanks"))}</h1><p>${esc(T("ui_thanksText"))}</p></div>
+      <h1>${esc(fin.t)}</h1><p>${esc(fin.p)}</p></div>
     ${statusHtml}
     ${moodboardHtml()}
     <div class="finale-actions">
@@ -829,13 +850,19 @@ $("#btnNext").onclick = async () => {
   const steps = buildSteps(D);
   const st = steps[state.step];
   if (st.type === "review") {
+    // Play/preview mode: show the moodboard locally — do NOT submit (no e-mail, no database).
     state.step++; save(); renderStep(); window.scrollTo(0,0);
-    submitAnswers().then(renderFinal);
     return;
   }
-  if (!validateStep()) return;
   state.step++; save(); renderStep(); window.scrollTo(0,0);
 };
+
+// Progress pills are clickable — jump straight to any section (free navigation).
+$("#progressSteps").addEventListener("click", e => {
+  const p = e.target.closest("[data-goto]");
+  if (!p) return;
+  state.step = parseInt(p.dataset.goto, 10); save(); renderStep(); window.scrollTo(0, 0);
+});
 
 /* ---------- lightbox ---------- */
 const lb = $("#lightbox");
