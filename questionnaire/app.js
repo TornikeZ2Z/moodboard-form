@@ -58,8 +58,11 @@ function evalDep(dep, d, prefix) {
   let qid = dep.q;
   if (prefix && qid.startsWith(prefix.tpl)) qid = prefix.real + qid.slice(prefix.tpl.length);
   const val = d[qid];
-  if (dep.op === "eq") return val === dep.v;
-  if (dep.op === "in") return Array.isArray(dep.v) && dep.v.includes(val);
+  // A multiple-choice answer is an array (e.g. ["parquet","tile"]), so "matches" means
+  // "the selection CONTAINS this value" — otherwise a rule could never fire on a multi-select.
+  const has = x => Array.isArray(val) ? val.includes(x) : val === x;
+  if (dep.op === "eq") return has(dep.v);
+  if (dep.op === "in") return Array.isArray(dep.v) && dep.v.some(has);
   if (dep.op === "gt") return num2(val) > dep.v;
   if (dep.op === "truthy") return !!val && (!Array.isArray(val) || val.length > 0);
   return true;
@@ -516,7 +519,7 @@ function renderStep() {
 
   if (st.type === "review") {
     stage.innerHTML = sectionHead(st) + renderReview(steps);
-    $("#btnNext").innerHTML = esc(({ge:"მუდბორდის ნახვა",en:"See the moodboard",ru:"Показать мудборд"}[state.lang]||"See the moodboard")) + ' <span class="arr">→</span>';
+    $("#btnNext").innerHTML = esc(FT().finalize) + ' <span class="arr">→</span>';
   } else {
     const qs = st.qs.filter(q => !q.show || q.show(D));
     qs.forEach(q => { if (q.t === "num" && D[q.id] === undefined) { D[q.id] = q.min; } });
@@ -774,45 +777,91 @@ async function submitAnswers() {
   } catch (e) { sendState = dbOk ? "ok" : "fail"; }
 }
 
+const FIN = {
+  ge:{ finalize:"ფორმის დასრულება", thanks:"თქვენი პასუხები გაეგზავნა დიზაინერს. მალე დაგიკავშირდებით.",
+       fail:"გაგზავნა ვერ მოხერხდა. გთხოვთ, სცადოთ თავიდან.",
+       pdf:"პასუხების ჩამოტვირთვა (PDF)", missing:"გთხოვთ, შეავსოთ ყველა სავალდებულო ველი" },
+  en:{ finalize:"Finalize form", thanks:"Your answers have been sent to the designer. We'll be in touch shortly.",
+       fail:"Sending failed. Please try again.",
+       pdf:"Download my answers (PDF)", missing:"Please complete all required fields" },
+  ru:{ finalize:"Завершить форму", thanks:"Ваши ответы отправлены дизайнеру. Мы скоро свяжемся с вами.",
+       fail:"Не удалось отправить. Попробуйте ещё раз.",
+       pdf:"Скачать мои ответы (PDF)", missing:"Заполните все обязательные поля" }
+};
+const FT = () => FIN[state.lang] || FIN.en;
+
 function renderFinal() {
   $("#navbar").style.display = "none";
   $("#progressWrap").style.display = "none";
   const statusHtml = {
     idle:"", sending:`<div class="sending">${T("ui_sending")}</div>`,
     ok:`<div class="sending send-ok">${T("ui_sendOk")}</div>`,
-    fail:`<div class="sending send-fail">${T("ui_sendFail")} <button class="btn ghost" id="btnRetry" style="padding:6px 16px;margin-left:8px">${T("ui_retry")}</button></div>`
+    fail:`<div class="sending send-fail">${esc(FT().fail)} <button class="btn ghost" id="btnRetry" style="padding:6px 16px;margin-left:8px">${esc(T("ui_retry"))}</button></div>`
   }[sendState];
-  const fin = {
-    ge:{ t:"თქვენი მუდბორდი", p:"ეს არის თქვენი პასუხების მიხედვით შედგენილი მუდბორდი. (სატესტო რეჟიმი — მონაცემები არ იგზავნება.)" },
-    en:{ t:"Your moodboard", p:"Here's the moodboard composed from your selections. (Preview mode — nothing is submitted.)" },
-    ru:{ t:"Ваш мудборд", p:"Мудборд, составленный по вашим ответам. (Демо-режим — данные не отправляются.)" }
-  }[state.lang] || { t:"Your moodboard", p:"Here's the moodboard from your selections. (Preview mode — nothing is submitted.)" };
+  const t = FT();
   stage.innerHTML = `<div class="welcome" style="padding-bottom:6px">
       <div class="wl-kicker">✦</div>
-      <h1>${esc(fin.t)}</h1><p>${esc(fin.p)}</p></div>
+      <h1>${esc(T("ui_thanks"))}</h1><p>${esc(t.thanks)}</p></div>
     ${statusHtml}
-    ${moodboardHtml()}
     <div class="finale-actions">
-      <button class="btn primary" id="btnPdf">${esc(T("ui_pdf"))}</button>
+      <button class="btn primary" id="btnPdf">${esc(t.pdf)}</button>
       <button class="btn ghost" id="btnRestart">${esc(T("ui_restart"))}</button>
     </div>`;
-  $("#btnPdf").onclick = downloadPdf;
+  $("#btnPdf").onclick = downloadAnswersPdf;
   $("#btnRestart").onclick = () => { localStorage.removeItem(SAVE_KEY); location.reload(); };
   const r = $("#btnRetry");
-  if (r) r.onclick = async () => { await submitAnswers(); renderFinal(); };
+  if (r) r.onclick = async () => { sendState = "sending"; renderFinal(); await submitAnswers(); renderFinal(); };
 }
 
-async function downloadPdf() {
-  const el = $("#moodboard");
-  const canvas = await html2canvas(el, { scale:2, useCORS:true, backgroundColor:"#fbf9f5" });
-  const img = canvas.toDataURL("image/jpeg", 0.92);
-  const pdf = new jspdf.jsPDF({ orientation:"landscape", unit:"mm", format:"a4" });
-  const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
-  const ratio = canvas.height / canvas.width;
-  let w = pw - 20, h = w * ratio;
-  if (h > ph - 20) { h = ph - 20; w = h / ratio; }
-  pdf.addImage(img, "JPEG", (pw-w)/2, (ph-h)/2, w, h);
-  pdf.save(`moodboard-${(D.g_name||"client").replace(/\s+/g,"_")}.pdf`);
+function answersSheetHtml() {
+  const steps = buildSteps(D);
+  const blocks = steps.filter(s => s.qs).map(s => {
+    const rows = s.qs.filter(q => !q.show || q.show(D)).map(q =>
+      `<tr>
+         <td style="padding:7px 10px;border-bottom:1px solid #e6e6ef;color:#6b6b75;width:52%;vertical-align:top">${esc(T(q.l))}</td>
+         <td style="padding:7px 10px;border-bottom:1px solid #e6e6ef;color:#16161c;font-weight:500;vertical-align:top">${esc(fmtVal(q, D))}</td>
+       </tr>`).join("");
+    const title = s.titleRaw ? s.titleRaw() : T(s.title);
+    return `<h2 style="font-size:13px;text-transform:uppercase;letter-spacing:.1em;color:#4e44e6;margin:22px 0 6px">${esc(title)}</h2>
+            <table style="width:100%;border-collapse:collapse;font-size:12.5px">${rows}</table>`;
+  }).join("");
+  const today = new Date().toLocaleDateString(state.lang==="ge"?"ka-GE":state.lang==="ru"?"ru-RU":"en-GB",
+    { year:"numeric", month:"long", day:"numeric" });
+  return `<div style="width:820px;padding:34px 40px;background:#fff;color:#16161c;
+      font-family:'Hanken Grotesk','Noto Sans Georgian',system-ui,sans-serif;line-height:1.45">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #16161c;padding-bottom:10px">
+      <div style="font-weight:800;font-size:18px;letter-spacing:.04em;text-transform:uppercase">${esc(CONFIG.BRAND_NAME)}</div>
+      <div style="font-size:11px;color:#6b6b75">${esc(today)}</div>
+    </div>
+    <div style="margin-top:10px;font-size:12px;color:#6b6b75">${esc([D.g_name, D.g_email, D.g_phone].filter(Boolean).join("  ·  "))}</div>
+    ${blocks}
+  </div>`;
+}
+
+async function downloadAnswersPdf() {
+  const holder = document.createElement("div");
+  holder.style.cssText = "position:fixed;left:-10000px;top:0;z-index:-1";
+  holder.innerHTML = answersSheetHtml();
+  document.body.appendChild(holder);
+  try {
+    const canvas = await html2canvas(holder.firstElementChild, { scale:2, useCORS:true, backgroundColor:"#ffffff" });
+    const pdf = new jspdf.jsPDF({ orientation:"portrait", unit:"mm", format:"a4" });
+    const pw = pdf.internal.pageSize.getWidth(), ph = pdf.internal.pageSize.getHeight();
+    const m = 10, imgW = pw - m*2;
+    const pxPerMm = canvas.width / imgW;
+    const pageHpx = (ph - m*2) * pxPerMm;
+    let y = 0, first = true;
+    while (y < canvas.height) {                       // slice the tall canvas into A4 pages
+      const hpx = Math.min(pageHpx, canvas.height - y);
+      const slice = document.createElement("canvas");
+      slice.width = canvas.width; slice.height = hpx;
+      slice.getContext("2d").drawImage(canvas, 0, y, canvas.width, hpx, 0, 0, canvas.width, hpx);
+      if (!first) pdf.addPage();
+      pdf.addImage(slice.toDataURL("image/jpeg", .92), "JPEG", m, m, imgW, hpx / pxPerMm);
+      first = false; y += hpx;
+    }
+    pdf.save(`espacio-answers-${(D.g_name||"client").replace(/\s+/g,"_")}.pdf`);
+  } finally { document.body.removeChild(holder); }
 }
 
 /* ---------- events ---------- */
@@ -888,8 +937,16 @@ $("#btnNext").onclick = async () => {
   const steps = buildSteps(D);
   const st = steps[state.step];
   if (st.type === "review") {
-    // Play/preview mode: show the moodboard locally — do NOT submit (no e-mail, no database).
+    const bad = steps.findIndex(s => s.qs && !sectionComplete(s));
+    if (bad >= 0) {                       // block: every required field must be answered first
+      state.step = bad; save(); renderStep(); window.scrollTo(0,0);
+      validateStep();                     // highlight exactly what is missing
+      flashHint(FT().missing);
+      return;
+    }
+    sendState = "sending";
     state.step++; save(); renderStep(); window.scrollTo(0,0);
+    submitAnswers().then(renderFinal);    // INSERT -> DB trigger -> e-mail to Espacio + to the client
     return;
   }
   state.step++; save(); renderStep(); window.scrollTo(0,0);
