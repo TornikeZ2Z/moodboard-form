@@ -123,9 +123,9 @@ textarea.inp{min-height:92px;resize:vertical}
 .tone i{display:block;height:46px}
 
 /* explainer */
-.explainer{margin-top:14px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:zoom-in;transition:.25s}
+.explainer{margin:14px 0;max-width:340px;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;cursor:zoom-in;transition:.25s}
 .explainer:hover{box-shadow:var(--shadow-lift)}
-.explainer img{width:100%;display:block}
+.explainer img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
 
 /* ---------- bottom bar ---------- */
 .navbar{position:fixed;bottom:0;left:0;right:0;background:rgba(251,251,254,.88);backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:14px max(20px,calc((100vw - 920px)/2 + 20px));display:flex;justify-content:space-between;align-items:center;gap:12px;z-index:50}

@@ -12,7 +12,8 @@ const T = (k, n) => {
   return v;
 };
 const OPT = name => `${CONFIG.ASSETS}/opts/${name}.jpg`;
-const IMGX = name => /^https?:\/\//.test(name) ? name : OPT(name);   // option images may be uploaded URLs
+const IMGX = name => /^https?:\/\//.test(name) ? name
+  : (String(name).includes("/") ? `${CONFIG.ASSETS}/${name}.jpg` : OPT(name));  // uploaded URL | assets sub-folder | assets/opts name
 const BOARD = name => `${CONFIG.ASSETS}/styles/${name}.jpg`;
 const PAL_IMG = i => `${CONFIG.ASSETS}/palettes/pal_${i}.png`;
 
@@ -403,7 +404,6 @@ function qHtml(q, d) {
       body = `<div class="yn">
         <div class="pill ${v==="yes"?"on":""}" data-pick="${q.id}" data-v="yes">${T("ui_yes")}</div>
         <div class="pill ${v==="no"?"on":""}" data-pick="${q.id}" data-v="no">${T("ui_no")}</div></div>`;
-      if (q.explain) body += `<div class="explainer" data-zoom='${JSON.stringify([OPT(q.explain)])}' data-cap="${esc(T(q.l))}"><img src="${OPT(q.explain)}" loading="lazy" alt=""></div>`;
       break; }
     case "radio": case "check": {
       const multi = q.t === "check";
@@ -453,13 +453,14 @@ function qHtml(q, d) {
       break; }
     case "palette": {
       const cur = Array.isArray(v)?v:[];
-      body = `<div class="cards c4">` + Object.keys(PALETTES).map(i => {
+      const plist = (q.o && q.o.length) ? q.o.map(o => o.v) : Object.keys(PALETTES);
+      body = `<div class="cards c4">` + plist.map(i => {
         const on = cur.includes(i);
-        const chips = PALETTES[i].map(c=>`<i style="background:${c}"></i>`).join("");
-        return `<div class="card pal ${on?"on":""}" data-pick="${q.id}" data-v="${i}" data-multi="1" data-max="2">
+        const chips = paletteColors(i).map(c=>`<i style="background:${c}"></i>`).join("");
+        return `<div class="card pal ${on?"on":""}" data-pick="${q.id}" data-v="${esc(i)}" data-multi="1" data-max="${q.max||2}">
           <div class="pal-chips">${chips}</div>
-          <button class="zoom" data-zoom='${JSON.stringify([PAL_IMG(i)])}' data-cap="${esc(T("pal_"+i))}">⌕</button>
-          <div class="cap">${esc(T("pal_"+i))}</div><div class="tick">✓</div></div>`;
+          <button class="zoom" data-zoom='${JSON.stringify([paletteImg(i)])}' data-cap="${esc(paletteLabel(i))}">⌕</button>
+          <div class="cap">${esc(paletteLabel(i))}</div><div class="tick">✓</div></div>`;
       }).join("") + `</div>`;
       break; }
     case "swatch": {
@@ -473,7 +474,10 @@ function qHtml(q, d) {
           <i style="background:${o.c}"></i><div class="cap">${esc(T(o.l))}</div><div class="tick">✓</div></div>`).join("") + `</div>`;
       break; }
   }
-  return `<div class="q" id="q_${q.id}"><div class="q-label">${esc(T(q.l))}${req}</div>${note}${body}<div class="q-error"></div></div>`;
+  const explain = q.explain
+    ? `<div class="explainer" data-zoom='${JSON.stringify([IMGX(q.explain)])}' data-cap="${esc(T(q.l))}"><img src="${IMGX(q.explain)}" loading="lazy" alt=""></div>`
+    : "";
+  return `<div class="q" id="q_${q.id}"><div class="q-label">${esc(T(q.l))}${req}</div>${note}${explain}${body}<div class="q-error"></div></div>`;
 }
 
 function renderStep() {
@@ -605,8 +609,8 @@ function fmtVal(q, d) {
   const v = d[q.id];
   if (v === undefined || v === null || v === "" || (Array.isArray(v)&&!v.length)) return T("r_empty");
   const one = x => {
-    if (q.t === "styles") return T("st_"+x);
-    if (q.t === "palette") return T("pal_"+x);
+    if (q.t === "styles") return styleLabel(x);
+    if (q.t === "palette") return paletteLabel(x);
     if (x === "yes") return T("ui_yes");
     if (x === "no") return T("ui_no");
     if (x === "other") return T("ui_other") + (d[q.id+"_other"] ? ` (${d[q.id+"_other"]})` : "");
@@ -627,6 +631,38 @@ function renderReview(steps) {
 }
 
 /* ---------- final: moodboard + send ---------- */
+/* Prefer the editable options coming from the admin/DB schema; fall back to the
+   built-in STYLES / PALETTES constants so nothing breaks before Mariam publishes. */
+function findQ(id) {
+  for (const st of buildSteps(D)) if (st.qs) { const q = st.qs.find(q => q.id === id); if (q) return q; }
+  return null;
+}
+function optsOf(id) { const q = findQ(id); return (q && q.o && q.o.length) ? q.o : null; }
+function styleImg(v) {
+  const o = (optsOf("s_style") || []).find(o => o.v === v);
+  if (o && o.img) return IMGX(o.img);
+  const s = STYLES.find(s => s.v === v);
+  return s ? BOARD(s.boards[0]) : BOARD("contemporary_1");
+}
+function styleLabel(v) {
+  const o = (optsOf("s_style") || []).find(o => o.v === v);
+  return o ? labelOf(o) : T("st_" + v);
+}
+function paletteColors(v) {
+  const o = (optsOf("s_palette") || []).find(o => o.v === v);
+  const c = o && o.c;
+  if (c) return Array.isArray(c) ? c : String(c).split(",").map(x => x.trim()).filter(Boolean);
+  return PALETTES[v] || PALETTES[5];
+}
+function paletteImg(v) {
+  const o = (optsOf("s_palette") || []).find(o => o.v === v);
+  return (o && o.img) ? IMGX(o.img) : PAL_IMG(v);
+}
+function paletteLabel(v) {
+  const o = (optsOf("s_palette") || []).find(o => o.v === v);
+  return o ? labelOf(o) : T("pal_" + v);
+}
+
 function primaryPalette() {
   const p = Array.isArray(D.s_palette) ? D.s_palette : [];
   return p.length ? p : ["5"];
@@ -637,16 +673,18 @@ function chosenStyles() {
 }
 
 function moodboardHtml() {
-  const stys = chosenStyles();
-  const s1 = stys[0] || STYLES[7];
-  const board1 = BOARD(s1.boards[0]);
+  const sel = Array.isArray(D.s_style) ? D.s_style : [];
+  const hasStyleOpts = !!optsOf("s_style");
+  const v1 = sel[0] || (STYLES[7] && STYLES[7].v) || "contemporary";
+  const board1 = styleImg(v1);
+  const legacy1 = STYLES.find(s => s.v === v1);
   let cell2 = "";
-  if (stys[1]) cell2 = `<img src="${BOARD(stys[1].boards[0])}"><div class="mb-tag">${esc(T("mb_style"))} · ${esc(T("st_"+stys[1].v))}</div>`;
-  else if (s1.boards[1]) cell2 = `<img src="${BOARD(s1.boards[1])}"><div class="mb-tag">${esc(T("st_"+s1.v))}</div>`;
-  else cell2 = `<img src="${PAL_IMG(primaryPalette()[0])}" style="object-fit:contain;background:#fff"><div class="mb-tag">${esc(T("mb_palette"))}</div>`;
+  if (sel[1]) cell2 = `<img src="${styleImg(sel[1])}"><div class="mb-tag">${esc(T("mb_style"))} · ${esc(styleLabel(sel[1]))}</div>`;
+  else if (!hasStyleOpts && legacy1 && legacy1.boards[1]) cell2 = `<img src="${BOARD(legacy1.boards[1])}"><div class="mb-tag">${esc(styleLabel(v1))}</div>`;
+  else cell2 = `<img src="${paletteImg(primaryPalette()[0])}" style="object-fit:contain;background:#fff"><div class="mb-tag">${esc(T("mb_palette"))}</div>`;
 
   const pals = primaryPalette();
-  const chips = pals.map(p => PALETTES[p].map(c=>`<i style="background:${c}"></i>`).join("")).join("");
+  const chips = pals.map(p => paletteColors(p).map(c=>`<i style="background:${c}"></i>`).join("")).join("");
 
   const cells = [];
   if (D.s_floorcol) cells.push([OPT("floorcol_"+D.s_floorcol), T("mb_floor")]);
@@ -659,8 +697,8 @@ function moodboardHtml() {
   const small = cells.slice(0,6).map(c =>
     `<div class="mb-cell mb-s"><img src="${c[0]}"><div class="mb-tag">${esc(c[1])}</div></div>`).join("");
 
-  const styleNames = stys.map(s=>T("st_"+s.v)).join(" + ") || "—";
-  const palNames = pals.map(p=>T("pal_"+p)).join(" + ");
+  const styleNames = sel.map(v=>styleLabel(v)).join(" + ") || "—";
+  const palNames = pals.map(p=>paletteLabel(p)).join(" + ");
   const today = new Date().toLocaleDateString(state.lang==="ge"?"ka-GE":state.lang==="ru"?"ru-RU":"en-GB",{ year:"numeric", month:"long", day:"numeric" });
 
   return `<div id="moodboard">
@@ -669,7 +707,7 @@ function moodboardHtml() {
       <div class="mb-for">${esc(T("ui_mbFor"))}<br><b>${esc(D.g_name||"")}</b></div>
     </div>
     <div class="mb-grid">
-      <div class="mb-cell mb-style1"><img src="${board1}"><div class="mb-tag">${esc(T("mb_style"))} · ${esc(T("st_"+s1.v))}</div></div>
+      <div class="mb-cell mb-style1"><img src="${board1}"><div class="mb-tag">${esc(T("mb_style"))} · ${esc(styleLabel(v1))}</div></div>
       <div class="mb-cell mb-style2">${cell2}</div>
       <div class="mb-cell mb-pal">${chips}</div>
       ${small}
