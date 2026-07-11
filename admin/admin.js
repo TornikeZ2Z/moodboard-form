@@ -6,6 +6,9 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 const AKEY = CONFIG.SUPABASE_KEY, AURL = CONFIG.SUPABASE_URL;
 const QASSETS = "../questionnaire/assets";
+// option / question image -> src: uploaded absolute URL | assets sub-folder ("styles/artdeco_1") | assets/opts name
+const ASRC = n => !n ? "" : (/^https?:\/\//.test(n) ? n
+  : (String(n).includes("/") ? `${QASSETS}/${n}.jpg` : `${QASSETS}/opts/${n}.jpg`));
 
 /* ---------- auth ---------- */
 const TOK_KEY = "esp_admin_session";
@@ -217,21 +220,35 @@ function editorHtml(sc, q) {
   const labelInputs = ["ge","en","ru"].map(l => `
     <div><label>${langName[l]}</label>
     <input data-ed="label" data-lang="${l}" value="${esc(tr(q.label,l))}"></div>`).join("");
-  const imgSrcOf = n => /^https?:\/\//.test(n) ? n : `../questionnaire/assets/opts/${n}.jpg`;
+  const imgSrcOf = ASRC;
   const thumb = o => o.img
     ? `<img class="opt-thumb" src="${esc(imgSrcOf(o.img))}" onerror="this.style.visibility='hidden'">`
     : `<span class="opt-thumb none">—</span>`;
+  const wantsColor = ["palette","tone"].includes(q.type);
+  const colList = o => Array.isArray(o.c) ? o.c : (o.c ? [o.c] : []);
+  const colPrev = o => { const a = colList(o);
+    return `<span class="colprev ${a.length?"":"none"}">${a.map(c=>`<i style="background:${esc(c)}"></i>`).join("")}</span>`; };
   const opts = (q.options||[]).map((o,oi) => `
-    <div class="opt-row" data-oi="${oi}">
-      ${thumb(o)}
+    <div class="opt-row ${wantsColor?"hascol":""}" data-oi="${oi}">
+      ${wantsColor ? colPrev(o) : thumb(o)}
       <input class="adv" value="${esc(o.v)}" disabled title="internal value — used in rules">
       ${["ge","en","ru"].map(l=>`<input data-ed="optlabel" data-oi="${oi}" data-lang="${l}" placeholder="${langName[l]}" value="${esc(tr(o.label,l))}">`).join("")}
+      ${wantsColor ? `<input data-ed="optcolors" data-oi="${oi}" placeholder="#e6c7c4, #d0d6c8, …" value="${esc(colList(o).join(", "))}" title="Colours — comma-separated hex">` : ""}
       <input class="adv" data-ed="optimg" data-oi="${oi}" placeholder="photo…" value="${esc(o.img||"")}">
       <button class="upbtn" data-act="optupload" data-oi="${oi}" title="Upload a photo for this option">📷 Upload</button>
       <button class="del" data-act="delopt" data-oi="${oi}" title="Remove option">✕</button>
     </div>`).join("");
-  const optHead = `<div class="opt-head"><span></span><span class="adv">value</span><span>ქართული</span><span>English</span><span>Русский</span><span class="adv">photo</span><span></span><span></span></div>`;
-  const choice = ["radio","check","imgradio","imgcheck","swatch"].includes(q.type);
+  const optHead = `<div class="opt-head ${wantsColor?"hascol":""}"><span></span><span class="adv">value</span><span>ქართული</span><span>English</span><span>Русский</span>${wantsColor?`<span>colours</span>`:""}<span class="adv">photo</span><span></span><span></span></div>`;
+  const choice = ["radio","check","imgradio","imgcheck","swatch","palette","tone"].includes(q.type);
+  const explainBox = `<div class="explain-box">
+      <label>Question image</label>
+      ${q.explain
+        ? `<img class="explain-thumb" src="${esc(ASRC(q.explain))}" onerror="this.style.visibility='hidden'">`
+        : `<div class="explain-thumb none">no image</div>`}
+      <button class="upbtn" data-act="explainupload" title="Shown inside the question, to explain it">📷 Upload</button>
+      ${q.explain ? `<button class="linkbtn" data-act="explaindel">Remove</button>` : ""}
+      <input class="adv" data-ed="explain" placeholder="image name…" value="${esc(q.explain||"")}">
+    </div>`;
 
   const depTargets = qList(sc).filter(x => x.id !== q.id)
     .map(x => `<option value="${esc(x.id)}" ${q.dep&&(q.dep.q===x.id||q.dep.q===("w_"+x.id)||q.dep.q===("b_"+x.id))?"selected":""}>${esc(tr(x.label,"ge"))}</option>`).join("");
@@ -248,7 +265,10 @@ function editorHtml(sc, q) {
 
   return `<div class="editor" data-edscope="${sc.key}" data-edq="${esc(q.id)}">
     <div class="ed-block"><h4>1 · Question text</h4>
-      <div class="grid3">${labelInputs}</div></div>
+      <div class="qtext-row">
+        <div class="grid3" style="flex:1">${labelInputs}</div>
+        ${explainBox}
+      </div></div>
     <div class="ed-block"><h4>2 · Behaviour</h4>
       <div class="grid3">
         <div><label>Answer type</label>
@@ -376,7 +396,7 @@ function valueVisuals(qid, data) {
   if (qid === "s_style") return vals.map(x => `<img src="../questionnaire/assets/styles/${x==="contemporary"||x==="midcentury" ? x+"_1" : x+"_1"}.jpg" title="${esc(x)}">`).join("");
   if (!q || !q.options) return "";
   return vals.map(x => { const o = q.options.find(o => o.v === x);
-    return o && o.img ? `<img src="${/^https?:\/\//.test(o.img)?o.img:`../questionnaire/assets/opts/${o.img}.jpg`}" title="${esc(x)}">` : ""; }).join("");
+    return o && o.img ? `<img src="${esc(ASRC(o.img))}" title="${esc(x)}">` : ""; }).join("");
 }
 
 function subSections(s) {
@@ -502,6 +522,32 @@ document.addEventListener("click", async e => {
     };
     fi.click();
   }
+  else if (act === "explainupload") {
+    const ed = e.target.closest("[data-edq]"); if (!ed) return;
+    const scX = scopes().find(s => s.key === ed.dataset.edscope);
+    const eq = qList(scX).find(x => x.id === ed.dataset.edq);
+    const fi = document.createElement("input"); fi.type = "file"; fi.accept = "image/*";
+    fi.onchange = async () => {
+      const f = fi.files[0]; if (!f) return;
+      toast("Uploading image…");
+      const small = await shrinkImage(f, 1200, .85);
+      const path = `question-images/${eq.id}/${Date.now().toString(36)}_${f.name.replace(/[^a-z0-9.]+/gi,"-").toLowerCase()}`;
+      const r = await api(`/storage/v1/object/project-photos/${path}`, { method:"POST",
+        headers:{ "Content-Type":"image/jpeg", "x-upsert":"true" }, body: small });
+      if (r.ok) { eq.explain = pubUrl(path);
+        OPEN_ED = { scope: ed.dataset.edscope, qid: eq.id }; renderQuestions(); updateSavebar();
+        toast("✓ Image uploaded — press “Publish changes” to make it live"); }
+      else toast("Upload failed (" + r.status + ")", true);
+    };
+    fi.click();
+  }
+  else if (act === "explaindel") {
+    const ed = e.target.closest("[data-edq]"); if (!ed) return;
+    const scY = scopes().find(s => s.key === ed.dataset.edscope);
+    const eq = qList(scY).find(x => x.id === ed.dataset.edq);
+    delete eq.explain;
+    OPEN_ED = { scope: ed.dataset.edscope, qid: eq.id }; renderQuestions(); updateSavebar();
+  }
   else if (act === "addopt" || act === "delopt") {
     const ed = e.target.closest("[data-edq]"); if (!ed) return;
     const esc2 = scopes().find(s => s.key === ed.dataset.edscope);
@@ -533,7 +579,16 @@ document.addEventListener("input", e => {
   else if (kind === "optlabel") setTr(q.options[+ed.dataset.oi].label, ed.dataset.lang, ed.value);
   else if (kind === "optimg") { const v = ed.value.trim(); if (v) q.options[+ed.dataset.oi].img = v; else delete q.options[+ed.dataset.oi].img;
     const row = ed.closest(".opt-row"); const t = row && row.querySelector(".opt-thumb");
-    if (t) { if (v) { const s=/^https?:\/\//.test(v)?v:`../questionnaire/assets/opts/${v}.jpg`; t.outerHTML = `<img class="opt-thumb" src="${s}" onerror="this.style.visibility='hidden'">`; } } }
+    if (t) { if (v) { const s=ASRC(v); t.outerHTML = `<img class="opt-thumb" src="${s}" onerror="this.style.visibility='hidden'">`; } } }
+  else if (kind === "optcolors") {
+    const o = q.options[+ed.dataset.oi];
+    const arr = ed.value.split(",").map(s => s.trim()).filter(Boolean);
+    if (q.type === "tone") o.c = arr[0] || ""; else o.c = arr;
+    const prev = ed.closest(".opt-row").querySelector(".colprev");
+    if (prev) { prev.className = "colprev " + (arr.length ? "" : "none");
+      prev.innerHTML = arr.map(c => `<i style="background:${esc(c)}"></i>`).join(""); }
+  }
+  else if (kind === "explain") { const t = ed.value.trim(); if (t) q.explain = t; else delete q.explain; }
   else if (kind === "type") q.type = ed.value;
   else if (kind === "req") q.req = ed.value === "1";
   else if (kind === "vis") q.visible = ed.value === "1";
@@ -581,13 +636,59 @@ document.querySelectorAll("#tabs button").forEach(b => b.onclick = async () => {
 });
 
 /* ---------- boot ---------- */
+/* One-time migration: the style boards & colour palettes used to be hard-coded in the
+   engine, so there was nothing to edit. Seed them as real options the first time we see
+   them, so Mariam can change photos/colours/names. Styles become a normal photo question. */
+const STYLE_SEED = [
+  { v:"artdeco",      label:"st_artdeco",      img:"styles/artdeco_1" },
+  { v:"midcentury",   label:"st_midcentury",   img:"styles/midcentury_1" },
+  { v:"scandinavian", label:"st_scandinavian", img:"styles/scandinavian_1" },
+  { v:"japandi",      label:"st_japandi",      img:"styles/japandi_1" },
+  { v:"popart",       label:"st_popart",       img:"styles/popart_1" },
+  { v:"retrovintage", label:"st_retrovintage", img:"styles/retrovintage_1" },
+  { v:"industrial",   label:"st_industrial",   img:"styles/industrial_1" },
+  { v:"contemporary", label:"st_contemporary", img:"styles/contemporary_1" },
+  { v:"parisian",     label:"st_parisian",     img:"styles/parisian_1" },
+  { v:"rustic",       label:"st_rustic",       img:"styles/rustic_1" },
+  { v:"farmhouse",    label:"st_farmhouse",    img:"styles/farmhouse_1" },
+  { v:"shabbychic",   label:"st_shabbychic",   img:"styles/shabbychic_1" },
+  { v:"coastal",      label:"st_coastal",      img:"styles/coastal_1" }
+];
+const PALETTE_SEED = [
+  { v:"1", label:"pal_1", c:["#FFFFFF","#0d0e10","#fd2e21","#fec81e","#1a79fe"] },
+  { v:"2", label:"pal_2", c:["#f3e6d5","#ac6c3d","#6a714f","#c6873a","#8e4939"] },
+  { v:"3", label:"pal_3", c:["#f6f1e7","#101010","#1b3f35","#b88536","#7c583e"] },
+  { v:"4", label:"pal_4", c:["#eadaca","#ca9e6f","#936443","#b55c3c","#61554a"] },
+  { v:"5", label:"pal_5", c:["#dbcfc1","#b7ab9b","#907b6a","#4e4a45"] },
+  { v:"6", label:"pal_6", c:["#ddccbc","#c3b7a7","#8e725d","#bea06e"] },
+  { v:"7", label:"pal_7", c:["#e8e0d5","#d1cfc2","#b8a78f","#a7ad9f"] },
+  { v:"8", label:"pal_8", c:["#e6c7c4","#d0d6c8","#d8e0e2","#bdb0a0"] }
+];
+function migrateSpecials() {
+  let n = 0;
+  for (const sc of scopes()) for (const q of qList(sc)) {
+    const empty = !(q.options && q.options.length);
+    if (q.type === "styles" && empty) {
+      q.type = "imgcheck";                       // now a normal, fully editable photo question
+      q.options = STYLE_SEED.map(s => ({ ...s }));
+      q.max = q.max || 2; q.cols = 2; n++;
+    } else if (q.type === "palette" && empty) {
+      q.options = PALETTE_SEED.map(p => ({ ...p, c: [...p.c] }));
+      q.max = q.max || 2; n++;
+    }
+  }
+  return n;
+}
+
 async function boot() {
   if (!session || Date.now() > (session.exp||0)) { renderLogin(); return; }
   $("#tabs").classList.remove("hidden"); $("#userbox").classList.remove("hidden");
   $("#userEmail").textContent = session.email;
   $("#main").innerHTML = `<div class="wrap"><div class="empty"><span class="spin"></span> Loading questionnaire…</div></div>`;
   try { await loadDoc(); } catch(e) { renderLogin(); return; }
+  const migrated = migrateSpecials();
   VIEW = "questions"; renderQuestions(); updateSavebar();
+  if (migrated) toast("Style & palette questions are now editable — press “Publish changes” to save them.");
 }
 boot();
 
