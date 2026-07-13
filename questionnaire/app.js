@@ -50,9 +50,9 @@ const FINISHES = ["chrome","nickel","mblack","gunmetal","mwhite","champagne","pg
 
 /* ---------- remote schema layer (Supabase) ---------- */
 const REMOTE = { doc:null };
-const SB = (path, opt={}) => fetch(CONFIG.SUPABASE_URL + path, Object.assign({
+const SB = (path, opt={}) => fetch(CONFIG.SUPABASE_URL + path, Object.assign({}, opt, {
   headers: Object.assign({ apikey: CONFIG.SUPABASE_KEY, Authorization: "Bearer " + CONFIG.SUPABASE_KEY,
-    "Content-Type": "application/json" }, opt.headers||{}) }, opt));
+    "Content-Type": "application/json" }, opt.headers||{}) }));   // headers merged LAST — caller headers must not wipe the api key
 
 function evalDep(dep, d, prefix) {
   let qid = dep.q;
@@ -757,7 +757,8 @@ async function submitAnswers() {
       body: JSON.stringify({ lang: state.lang, client_name: D.g_name||"", client_email: D.g_email||"",
         client_phone: D.g_phone||"", data: D, summary: answersRows() }) });
     dbOk = r.status === 201;
-  } catch(e) {}
+    if (!dbOk) console.warn("[espacio] submission rejected:", r.status, await r.text().catch(()=>""));
+  } catch(e) { console.warn("[espacio] submission error:", e); }
   const keyOk = CONFIG.WEB3FORMS_KEY && !/YOUR_WEB3FORMS/.test(CONFIG.WEB3FORMS_KEY);
   if (!keyOk) { sendState = dbOk ? "ok" : "fail"; return; }
   try {
